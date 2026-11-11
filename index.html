@@ -141,6 +141,15 @@
   .admin-secondary:hover { background: #e2e8f0; }
   .admin-danger { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
   .admin-danger:hover { background: #ffe4e6; }
+  .mobile-bottom-nav {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  }
+  .mobile-menu-sheet {
+    bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+  @media (max-width: 1023px) {
+    body { padding-bottom: calc(4.25rem + env(safe-area-inset-bottom)); }
+  }
   @media (prefers-reduced-motion: reduce) {
     .candidate-slide, .candidate-slider-controls button { transition: none !important; animation: none !important; }
   }
@@ -150,11 +159,11 @@
 
 <!-- Header & Navigation -->
 <header class="sticky top-0 z-50 glass-header border-b border-white/10 transition-all duration-300">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+  <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 lg:h-20 flex items-center justify-between gap-3">
     
     <!-- Brand Logo -->
     <a href="#home" data-route="home" class="flex items-center gap-3.5 group text-decoration-none">
-      <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-700 via-brand-600 to-gold-500 p-0.5 shadow-lg shadow-brand-900/40 group-hover:scale-105 transition duration-300">
+      <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-2xl bg-gradient-to-tr from-brand-700 via-brand-600 to-gold-500 p-0.5 shadow-lg shadow-brand-900/40 group-hover:scale-105 transition duration-300">
         <div class="w-full h-full bg-navy-900 rounded-[14px] flex items-center justify-center border border-white/10">
           <svg class="w-8 h-8" viewBox="0 0 48 48" fill="none" aria-hidden="true">
             <path d="M8 39h32M12 39V20l12-9 12 9v19" stroke="#F8FAFC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -185,31 +194,52 @@
 
     <!-- Header Actions -->
     <div class="flex items-center gap-3">
-      <a href="#citizen" data-route="citizen" class="relative group overflow-hidden bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-navy-950 font-bold text-sm px-5 py-2.5 rounded-xl shadow-lg shadow-gold-500/20 hover:shadow-gold-500/30 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+      <a href="#citizen" data-route="citizen" class="hidden lg:flex relative group overflow-hidden bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-navy-950 font-bold text-sm px-5 py-2.5 rounded-xl shadow-lg shadow-gold-500/20 hover:shadow-gold-500/30 transition transform hover:-translate-y-0.5 active:translate-y-0 items-center gap-2">
         <i class="fa-solid fa-lightbulb text-navy-900 group-hover:rotate-12 transition"></i>
         <span>شارك باقتراح</span>
       </a>
 
       <!-- Mobile Menu Toggle -->
-      <button id="mobileMenuBtn" class="lg:hidden w-11 h-11 rounded-xl bg-white/10 border border-white/10 text-white flex items-center justify-center hover:bg-white/15 transition">
+      <button id="mobileMenuBtn" type="button" aria-label="فتح القائمة" aria-controls="mobileDropdown" aria-expanded="false" class="lg:hidden w-11 h-11 rounded-xl bg-white/10 border border-white/10 text-white flex items-center justify-center hover:bg-white/15 transition">
         <i class="fa-solid fa-bars text-lg" id="menuIcon"></i>
       </button>
     </div>
   </div>
 
-  <!-- Mobile Dropdown Navigation -->
-  <div id="mobileDropdown" class="hidden lg:hidden bg-navy-900/95 border-b border-white/10 px-4 py-4 space-y-1">
-    <a href="#home" data-route="home" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">الرئيسية</a>
-    <a href="#about" data-route="about" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">من نحن</a>
-    <a href="#candidate" data-route="candidate" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">عن المترشح</a>
-    <a href="#program" data-route="program" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">البرنامج</a>
-    <a href="#projects" data-route="projects" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">المشاريع</a>
-    <a href="#citizen" data-route="citizen" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">فضاء المواطن</a>
-    <a href="#news" data-route="news" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">الأخبار</a>
-    <a href="#contact" data-route="contact" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">اتصل بنا</a>
-    <a href="adminvot.html" class="block px-4 py-2.5 rounded-xl text-sm font-bold text-gold-300 hover:bg-white/10"><i class="fa-solid fa-sliders ml-2"></i>لوحة التحكم</a>
-  </div>
 </header>
+
+<!-- Mobile Dropdown Navigation -->
+<div id="mobileDropdown" class="mobile-menu-sheet hidden lg:hidden fixed inset-x-3 z-[60] max-h-[70vh] overflow-y-auto rounded-2xl bg-slate-950/95 backdrop-blur-xl border border-white/10 p-3 shadow-2xl space-y-1">
+  <a href="#home" data-route="home" class="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">الرئيسية</a>
+  <a href="#about" data-route="about" class="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">من نحن</a>
+  <a href="#candidate" data-route="candidate" class="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">عن المترشح</a>
+  <a href="#program" data-route="program" class="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">البرنامج</a>
+  <a href="#projects" data-route="projects" class="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">المشاريع</a>
+  <a href="#citizen" data-route="citizen" class="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">فضاء المواطن</a>
+  <a href="#news" data-route="news" class="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">الأخبار</a>
+  <a href="#contact" data-route="contact" class="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">اتصل بنا</a>
+  <a href="adminvot.html" class="block px-4 py-3 rounded-xl text-sm font-bold text-gold-300 hover:bg-white/10"><i class="fa-solid fa-sliders ml-2"></i>لوحة التحكم</a>
+</div>
+
+<button id="mobileMenuBackdrop" type="button" aria-label="إغلاق القائمة" class="hidden lg:hidden fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm"></button>
+
+<nav id="mobileBottomNav" aria-label="التنقل الرئيسي" class="lg:hidden mobile-bottom-nav fixed bottom-0 inset-x-0 z-40 grid grid-cols-5 border-t border-white/10 bg-navy-950/95 backdrop-blur-xl shadow-[0_-8px_24px_rgba(2,6,23,0.28)]">
+  <a href="#home" data-route="home" aria-label="الرئيسية" class="nav-item mobile-tab-link flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-slate-400 transition">
+    <i class="fa-solid fa-house text-base" aria-hidden="true"></i><span class="text-[10px] font-bold leading-none">الرئيسية</span>
+  </a>
+  <a href="#program" data-route="program" aria-label="البرنامج" class="nav-item mobile-tab-link flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-slate-400 transition">
+    <i class="fa-solid fa-list-check text-base" aria-hidden="true"></i><span class="text-[10px] font-bold leading-none">البرنامج</span>
+  </a>
+  <a href="#projects" data-route="projects" aria-label="المشاريع" class="nav-item mobile-tab-link flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-slate-400 transition">
+    <i class="fa-solid fa-diagram-project text-base" aria-hidden="true"></i><span class="text-[10px] font-bold leading-none">المشاريع</span>
+  </a>
+  <a href="#citizen" data-route="citizen" aria-label="فضاء المواطن" class="nav-item mobile-tab-link flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-slate-400 transition">
+    <i class="fa-solid fa-lightbulb text-base" aria-hidden="true"></i><span class="text-[10px] font-bold leading-none">شارك</span>
+  </a>
+  <button id="mobileMoreBtn" type="button" aria-label="المزيد" aria-controls="mobileDropdown" aria-expanded="false" class="flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-slate-400 transition hover:text-white">
+    <i class="fa-solid fa-ellipsis text-lg" aria-hidden="true"></i><span class="text-[10px] font-bold leading-none">المزيد</span>
+  </button>
+</nav>
 
 <!-- Main SPA Content Wrapper -->
 <main id="app" class="flex-1">
@@ -245,12 +275,12 @@
             </p>
 
             <!-- Call to Actions -->
-            <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
-              <a href="#program" data-route="program" class="px-7 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-xl shadow-brand-900/40 hover:shadow-brand-600/30 transition transform hover:-translate-y-0.5 flex items-center gap-2.5">
+            <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-2">
+              <a href="#program" data-route="program" class="w-full sm:w-auto min-h-12 justify-center px-7 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-xl shadow-brand-900/40 hover:shadow-brand-600/30 transition transform hover:-translate-y-0.5 flex items-center gap-2.5">
                 <i class="fa-solid fa-clipboard-list text-emerald-200"></i>
                 <span>استكشف البرنامج التنموي</span>
               </a>
-              <a href="#citizen" data-route="citizen" class="px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 backdrop-blur-md hover:border-white/30 transition flex items-center gap-2.5">
+              <a href="#citizen" data-route="citizen" class="w-full sm:w-auto min-h-12 justify-center px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 backdrop-blur-md hover:border-white/30 transition flex items-center gap-2.5">
                 <i class="fa-solid fa-check-to-slot text-gold-400"></i>
                 <span>صوّت وشارك برأيك</span>
               </a>
@@ -1050,7 +1080,7 @@
 </div>
 
 <!-- Back to Top Button -->
-<button id="toTop" class="fixed bottom-6 left-6 z-40 w-12 h-12 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white shadow-xl shadow-brand-900/40 flex items-center justify-center text-lg opacity-0 pointer-events-none transition duration-300">
+<button id="toTop" class="fixed bottom-24 lg:bottom-6 left-6 z-40 w-12 h-12 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white shadow-xl shadow-brand-900/40 flex items-center justify-center text-lg opacity-0 pointer-events-none transition duration-300">
   <i class="fa-solid fa-arrow-up"></i>
 </button>
 
@@ -1197,6 +1227,18 @@ function loadDashboardState() {
   }
 }
 /* Routing Handler */
+function setMobileMenuOpen(isOpen) {
+  $('mobileDropdown').classList.toggle('hidden', !isOpen);
+  $('mobileMenuBackdrop').classList.toggle('hidden', !isOpen);
+  $('mobileMenuBtn').setAttribute('aria-expanded', String(isOpen));
+  $('mobileMenuBtn').setAttribute('aria-label', isOpen ? 'إغلاق القائمة' : 'فتح القائمة');
+  $('menuIcon').className = isOpen ? 'fa-solid fa-xmark text-lg' : 'fa-solid fa-bars text-lg';
+  $('mobileMoreBtn').setAttribute('aria-expanded', String(isOpen));
+  const moreIsActive = $('mobileMoreBtn').dataset.active === 'true';
+  $('mobileMoreBtn').classList.toggle('text-gold-400', isOpen || moreIsActive);
+  $('mobileMoreBtn').classList.toggle('text-slate-400', !isOpen && !moreIsActive);
+}
+
 function showView(route) {
   if (!ROUTES.includes(route)) route = 'home';
   currentRoute = route;
@@ -1215,11 +1257,15 @@ function showView(route) {
       link.classList.toggle('text-white', isTarget);
       link.classList.toggle('text-gold-400', isTarget);
     }
+    if (link.classList.contains('mobile-tab-link')) {
+      if (isTarget) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    }
   });
 
-  // Close mobile nav if open
-  $('mobileDropdown').classList.add('hidden');
-  $('menuIcon').className = 'fa-solid fa-bars text-lg';
+  const moreIsActive = !['home', 'program', 'projects', 'citizen'].includes(route);
+  $('mobileMoreBtn').dataset.active = String(moreIsActive);
+  setMobileMenuOpen(false);
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1628,7 +1674,7 @@ function applySiteText() {
   $('contactDescription').textContent = siteText.contactDescription;
   renderContactChannels();
   renderCustomContactLinks();
-  document.title = `${siteText.title1} — منصة القائمة والبرنامج التنموي لبلدية الخنق`;
+  document.title = `${siteText.title1} — إنجاز`;
 }
 
 function renderCustomContactLinks() {
@@ -1798,7 +1844,12 @@ function init() {
   $('modalCloseX').addEventListener('click', closeModal);
   $('modalBtnClose').addEventListener('click', closeModal);
   $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeModal();
+      setMobileMenuOpen(false);
+    }
+  });
 
   // Navigation Links Click Handling
   document.addEventListener('click', e => {
@@ -1815,12 +1866,10 @@ function init() {
   window.addEventListener('hashchange', handleHashChange);
 
   // Mobile Menu Toggle
-  $('mobileMenuBtn').addEventListener('click', () => {
-    const dd = $('mobileDropdown');
-    const isHidden = dd.classList.contains('hidden');
-    dd.classList.toggle('hidden');
-    $('menuIcon').className = isHidden ? 'fa-solid fa-xmark text-lg' : 'fa-solid fa-bars text-lg';
-  });
+  const toggleMobileMenu = () => setMobileMenuOpen($('mobileDropdown').classList.contains('hidden'));
+  $('mobileMenuBtn').addEventListener('click', toggleMobileMenu);
+  $('mobileMoreBtn').addEventListener('click', toggleMobileMenu);
+  $('mobileMenuBackdrop').addEventListener('click', () => setMobileMenuOpen(false));
 
   // Back to Top
   const toTop = $('toTop');
