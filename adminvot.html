@@ -218,7 +218,8 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
     </div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
       <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-        <i class="fa-solid fa-circle-info ml-2"></i>تُزامَن التغييرات مع Supabase بعد تسجيل الدخول بحساب مسؤول معتمد. عند تعذر المزامنة تبقى نسخة محلية معلّمة بوضوح حتى إعادة المحاولة.
+        <p><i class="fa-solid fa-circle-info ml-2"></i>تُزامَن التغييرات مع Supabase بعد تسجيل الدخول بحساب مسؤول معتمد. لا يعني ظهور التعديل في المعاينة أنه نُشر؛ انتظر رسالة تأكيد المزامنة.</p>
+        <p id="supabaseSyncGuidance" class="mt-2 font-bold" role="status" aria-live="polite">جارٍ التحقق من محتوى قاعدة البيانات...</p>
       </div>
       <div id="adminStatus" class="hidden rounded-xl p-3 text-sm font-bold" role="status" aria-live="polite"></div>
 
@@ -1730,6 +1731,10 @@ function setupDashboard() {
   const supabaseRefreshRemote = $('supabaseRefreshRemote');
   const adminStorageIndicator = $('adminStorageIndicator');
   const setSupabaseAuthStatus = message => { if (supabaseAuthStatus) supabaseAuthStatus.textContent = message; };
+  const setSyncGuidance = message => {
+    const guidance = $('supabaseSyncGuidance');
+    if (guidance) guidance.textContent = message;
+  };
   let databaseConnectionVerified = false;
   let adminReadyForEditing = false;
   const setAdminEditingEnabled = enabled => {
@@ -1802,6 +1807,7 @@ function setupDashboard() {
     databaseConnectionVerified = true;
     if (!data) {
       lastKnownRemoteUpdatedAt = null;
+      setSyncGuidance('لم يُعثر على سجل المحتوى في Supabase. احتفظ بنسخة احتياطية قبل النشر، ثم سجّل الدخول كمسؤول معتمد وراجع المحتوى قبل المزامنة.');
       if (localStorage.getItem(STORAGE_KEY)) {
         pendingLocalChanges = true;
         requiresConflictResolution = true;
@@ -1813,6 +1819,11 @@ function setupDashboard() {
       return false;
     }
     lastKnownRemoteUpdatedAt = data.updated_at;
+    if (isEmptyInitialSupabaseContent(data.content)) {
+      setSyncGuidance('قاعدة البيانات تحتوي حاليًا على سجل التهيئة الفارغ فقط؛ المحتوى الظاهر محليًا لم يُنشر. بعد تسجيل الدخول كمسؤول معتمد، راجع المحتوى ثم اضغط «مزامنة التعديلات المحلية» وأكّد استبدال محتوى Supabase.');
+    } else {
+      setSyncGuidance('يوجد محتوى منشور في Supabase. سجّل الدخول كمسؤول معتمد لحفظ التعديلات؛ لن تُعلن المزامنة ناجحة إلا بعد تأكيد الكتابة.');
+    }
     return refreshAdminFromRemote(data.content, force);
   };
   const publishLocalContent = async () => {
@@ -1879,6 +1890,7 @@ function setupDashboard() {
         if (currentCheck !== authCheckId) return;
         console.error('تعذر التحقق من صلاحية المسؤول.', error);
         setSupabaseAuthStatus('تعذر التحقق من صلاحية المسؤول. لا يمكن إجراء تعديلات حتى ينجح التحقق.');
+        setSyncGuidance('تعذر التحقق من اتصال قاعدة البيانات أو صلاحيات القراءة. لم يتم نشر أي محتوى.');
         if (adminStorageIndicator) adminStorageIndicator.textContent = 'تعذر التحقق من صلاحية المسؤول';
         updateAdminOverview();
       }
@@ -1948,11 +1960,13 @@ function setupDashboard() {
     }).catch(error => {
       console.error('تعذر استعادة جلسة Supabase.', error);
       setSupabaseAuthStatus('تعذر التحقق من جلسة Supabase.');
+      setSyncGuidance('تعذر استعادة جلسة الدخول. سجّل الدخول مجددًا بحساب مسؤول معتمد قبل محاولة النشر.');
       if (adminStorageIndicator) adminStorageIndicator.textContent = 'تعذر استعادة جلسة المسؤول';
     });
     loadSupabaseContent().catch(error => {
       console.error('تعذر تحميل المحتوى من Supabase.', error);
       setSupabaseAuthStatus('تعذر الاتصال. شغّل supabase-setup.sql في SQL Editor وتحقق من الاتصال.');
+      setSyncGuidance('تعذر الاتصال بـ Supabase؛ لا يمكن تأكيد النشر الآن. ستبقى التعديلات محلية فقط.');
       if (adminStorageIndicator) adminStorageIndicator.textContent = 'تعذر الاتصال بـ Supabase';
     });
     window.addEventListener('nabniha-dashboard-content-updated', refreshAdminUi);
