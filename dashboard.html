@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم — نبنيها معًا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Cairo', 'Tajawal', 'sans-serif'],
+          display: ['Tajawal', 'Cairo', 'sans-serif'],
+        },
+        colors: {
+          brand: {
+            50: '#f0fdf4',
+            100: '#dcfce7',
+            500: '#22c55e',
+            600: '#16a34a',
+            700: '#15803d',
+            800: '#166534',
+            900: '#14532d',
+          },
+          navy: {
+            800: '#111e38',
+            900: '#0b1528',
+            950: '#070d19',
+          },
+          gold: {
+            400: '#fbbf24',
+            500: '#f59e0b',
+            600: '#d97706',
+          }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  :root {
+    --primary: #15803d;
+    --navy-dark: #0b1528;
+    --gold: #f59e0b;
+  }
+  body {
+    font-family: 'Cairo', sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    scroll-behavior: smooth;
+  }
+  .view-pane {
+    display: none;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .view-pane.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .glass-header {
+    background: rgba(11, 21, 40, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+  }
+  .hero-gradient {
+    background: linear-gradient(90deg, rgba(7, 13, 25, 0.88), rgba(7, 13, 25, 0.76)),
+                url('hero.png') center / cover no-repeat;
+  }
+  .pattern-grid {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+  .pcard-bg {
+    position: relative;
+    background-size: cover;
+    background-position: center;
+  }
+  .pcard-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(11,21,40,0.5) 0%, rgba(11,21,40,0.92) 100%);
+    border-radius: inherit;
+    transition: background 0.3s ease;
+  }
+  .pcard-bg:hover::before {
+    background: linear-gradient(180deg, rgba(21,128,61,0.65) 0%, rgba(11,21,40,0.95) 100%);
+  }
+  .candidate-slide[hidden] { display: none; }
+  @keyframes candidateCardIn {
+    from { opacity: 0; transform: translateX(14px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .candidate-slide.is-entering { animation: candidateCardIn 220ms ease-out both; }
+  .admin-field {
+    display: block;
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    color: #0f172a;
+    font: inherit;
+    font-size: 0.875rem;
+    outline: none;
+  }
+  .admin-field:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(34, 197, 94, .15); background: white; }
+  .admin-primary, .admin-secondary, .admin-danger {
+    border-radius: 0.75rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 800;
+    transition: background .2s ease;
+  }
+  .admin-primary { background: #15803d; color: white; }
+  .admin-primary:hover { background: #166534; }
+  .admin-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+  .admin-secondary:hover { background: #e2e8f0; }
+  .admin-danger { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+  .admin-danger:hover { background: #ffe4e6; }
+  html { scroll-padding-top: 5.5rem; }
+  .admin-nav-link[aria-current="location"] { background: rgba(255,255,255,.14); color: #fbbf24; }
+  .admin-settings-section { scroll-margin-top: 6rem; }
+  .admin-settings-section[hidden], [data-admin-panel][hidden] { display:none !important; }
+  .candidate-editor-layout { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem;align-items:start;direction:ltr; }
+  .candidate-editor-preview { grid-column:1;direction:rtl; }
+  .candidate-editor-preview #candidatePreview { margin-right:auto;margin-left:0; }
+  .candidate-editor-form { grid-column:2;direction:rtl; }
+  @media(max-width:767px) { .candidate-editor-layout { grid-template-columns:minmax(0,1fr); } .candidate-editor-preview,.candidate-editor-form { grid-column:1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .candidate-slide, .candidate-slider-controls button { transition: none !important; animation: none !important; }
+  }
+body > header, body > footer { display:none !important; } #app > section:not(#view-admin) { display:none !important; } #view-admin { display:block !important; opacity:1 !important; transform:none !important; } 
+  body { background:#f1f5f9; }
+  .admin-sidebar { position:fixed; z-index:60; inset:0 auto 0 0; right:0; width:258px; min-height:100vh; padding:22px 15px; display:flex; flex-direction:column; gap:6px; color:#e2e8f0; background:linear-gradient(180deg,#0b1528 0%,#101d35 100%); box-shadow:-8px 0 30px rgba(15,23,42,.12); overflow-y:auto; }
+  .admin-sidebar-brand { display:flex; align-items:center; gap:12px; padding:7px 9px 22px; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,.1); }
+  .admin-brand-mark { width:43px;height:43px;border-radius:14px;display:grid;place-items:center;font-size:23px;font-weight:900;color:#fff;background:linear-gradient(135deg,#16a34a,#d97706); }
+  .admin-sidebar-brand strong { display:block;color:#fff;font-size:15px;font-weight:900; }
+  .admin-sidebar-brand span { display:block;color:#94a3b8;font-size:11px;margin-top:2px; }
+  .admin-sidebar-caption { padding:8px 12px 3px;color:#64748b;font-size:10px;font-weight:900; }
+  .admin-nav-link { display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:11px;color:#cbd5e1;font-size:13px;font-weight:700;transition:.2s;text-decoration:none; }
+  .admin-nav-link i { width:19px;text-align:center;color:#94a3b8; }
+  .admin-nav-link:hover,.admin-nav-link[aria-current="location"] { background:rgba(255,255,255,.1);color:#fbbf24; }
+  .admin-nav-link[aria-current="location"] i,.admin-nav-link:hover i { color:#fbbf24; }
+  .admin-public-link { margin-top:3px;border:1px solid rgba(251,191,36,.2);color:#fcd34d; }
+  .admin-sidebar-caption-bottom { margin-top:13px; }
+  .admin-sidebar-footer { margin-top:auto;padding:18px 10px 4px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:#94a3b8; }
+  .admin-online-dot { display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-left:5px;box-shadow:0 0 0 4px rgba(34,197,94,.12); }
+  #app { margin-right:258px;min-width:0; }
+  .admin-sidebar-toggle { display:none; }
+  .admin-overview-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px; }
+  .admin-stat-card { background:#fff;border:1px solid #e2e8f0;border-radius:17px;padding:18px;box-shadow:0 4px 14px rgba(15,23,42,.035); }
+  .admin-stat-icon { width:40px;height:40px;border-radius:13px;display:grid;place-items:center;margin-bottom:13px;background:#f0fdf4;color:#15803d; }
+  .admin-stat-value { font-size:27px;font-weight:900;color:#0f172a;line-height:1.2; }
+  .admin-stat-label { font-size:12px;color:#64748b;font-weight:700;margin-top:5px; }
+  .admin-tool-btn { display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:11px;padding:10px 14px;font-size:12px;font-weight:800; }
+  .admin-tool-primary { background:#15803d;color:#fff; }
+  .admin-tool-light { background:#f1f5f9;color:#334155;border:1px solid #e2e8f0; }
+  .admin-nav-link:focus-visible,.admin-tool-btn:focus-visible,.admin-sidebar-toggle:focus-visible { outline:3px solid #fbbf24;outline-offset:3px; }
+  @media(max-width:900px) { .admin-sidebar { transform:translateX(105%);transition:transform .25s ease; } body.admin-sidebar-open .admin-sidebar { transform:translateX(0); } #app { margin-right:0; } .admin-sidebar-toggle { display:grid;place-items:center;position:fixed;z-index:70;top:14px;right:14px;width:43px;height:43px;border-radius:13px;background:#0b1528;color:#fff;box-shadow:0 5px 18px rgba(15,23,42,.2); } body.admin-sidebar-open::after { content:"";position:fixed;inset:0;background:rgba(2,6,23,.45);z-index:55; } .admin-overview-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media(max-width:480px) { .admin-overview-grid { grid-template-columns:1fr 1fr;gap:9px; } .admin-stat-card { padding:13px; } .admin-stat-value { font-size:22px; } }
+
+</style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+<button id="adminSidebarToggle" class="admin-sidebar-toggle" type="button" aria-label="فتح قائمة لوحة التحكم" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+<nav id="adminSettingsNav" aria-label="التنقل بين أقسام لوحة التحكم" class="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <div class="admin-brand-mark">ن</div>
+    <div><strong>نبنيها معًا</strong><span>مركز إدارة المنصة</span></div>
+  </div>
+  <div class="admin-sidebar-caption">القائمة الرئيسية</div>
+  <a href="#admin-overview" class="admin-nav-link" aria-current="location"><i class="fa-solid fa-chart-pie"></i><span>لوحة المعلومات</span></a>
+  <a href="#admin-home" class="admin-nav-link"><i class="fa-solid fa-sliders"></i><span>إدارة الموقع</span></a>
+  <a href="#admin-about" class="admin-nav-link"><i class="fa-solid fa-eye"></i><span>من نحن</span></a>
+  <a href="#admin-candidates" class="admin-nav-link"><i class="fa-solid fa-users"></i><span>المترشحون</span></a>
+  <a href="#admin-program" class="admin-nav-link"><i class="fa-solid fa-list-check"></i><span>البرنامج التنموي</span></a>
+  <a href="#admin-priorities" class="admin-nav-link"><i class="fa-solid fa-diagram-project"></i><span>المشاريع والأولويات</span></a>
+  <a href="#admin-citizen" class="admin-nav-link"><i class="fa-solid fa-comments"></i><span>فضاء المواطن</span></a>
+  <a href="#admin-news" class="admin-nav-link"><i class="fa-solid fa-newspaper"></i><span>الأخبار</span></a>
+  <a href="#admin-contact" class="admin-nav-link"><i class="fa-solid fa-address-card"></i><span>اتصل بنا</span></a>
+  <div class="admin-sidebar-caption admin-sidebar-caption-bottom">الأدوات</div>
+  <a href="#admin-backup" class="admin-nav-link"><i class="fa-solid fa-box-archive"></i><span>النسخ الاحتياطي</span></a>
+  <a href="intakhib021.html" class="admin-nav-link admin-public-link"><i class="fa-solid fa-arrow-up-right-from-square"></i><span>معاينة الموقع</span></a>
+  <div class="admin-sidebar-footer"><span class="admin-online-dot"></span> التخزين المحلي مفعّل</div>
+</nav>
+<main id="app" class="flex-1">
+<section id="view-admin" class="view-pane">
+    <div class="bg-slate-900 text-white py-12 pattern-grid border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <a href="intakhib021.html" class="inline-flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white mb-5"><i class="fa-solid fa-arrow-right"></i>العودة إلى صفحة العرض</a>
+        <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">إدارة محتوى الموقع</span>
+        <h1 class="text-3xl sm:text-4xl font-black mt-3">لوحة <span class="text-brand-500">التحكم</span></h1>
+        <p class="text-slate-300 text-sm mt-2">حدّث النصوص والمترشحين ومحاور البرنامج والأخبار، ثم احفظ التغييرات.</p>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+      <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <i class="fa-solid fa-circle-info ml-2"></i>لوحة مستقلة عن صفحة العرض. تُحفظ التغييرات في المتصفح نفسه وتظهر عند فتح صفحة العرض في المتصفح ذاته. النشر على أجهزة أو خوادم أخرى يحتاج إلى خدمة خلفية.
+      </div>
+      <div id="adminStatus" class="hidden rounded-xl p-3 text-sm font-bold" role="status" aria-live="polite"></div>
+
+      <section id="admin-overview" data-admin-panel="overview" class="admin-settings-section bg-transparent" hidden>
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+          <div><span class="text-xs font-black text-brand-700">نظرة عامة</span><h2 class="text-2xl font-black text-slate-900 mt-1">مرحبًا بك في لوحة الإدارة</h2><p class="text-sm text-slate-500 mt-1">ملخص سريع لمحتوى منصة نبنيها معًا.</p></div>
+          <a href="intakhib021.html" target="_blank" rel="noopener" class="admin-tool-btn admin-tool-light"><i class="fa-solid fa-eye"></i> فتح الموقع للمعاينة</a>
+        </div>
+        <div class="admin-overview-grid">
+          <article class="admin-stat-card"><div class="admin-stat-icon"><i class="fa-solid fa-users"></i></div><div id="overviewCandidateCount" class="admin-stat-value">—</div><div class="admin-stat-label">المترشحون</div></article>
+          <article class="admin-stat-card"><div class="admin-stat-icon" style="background:#eff6ff;color:#2563eb"><i class="fa-solid fa-layer-group"></i></div><div id="overviewProgramCount" class="admin-stat-value">—</div><div class="admin-stat-label">محاور البرنامج</div></article>
+          <article class="admin-stat-card"><div class="admin-stat-icon" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-list-check"></i></div><div id="overviewCommitmentCount" class="admin-stat-value">—</div><div class="admin-stat-label">الالتزامات</div></article>
+          <article class="admin-stat-card"><div class="admin-stat-icon" style="background:#fdf2f8;color:#be185d"><i class="fa-solid fa-newspaper"></i></div><div id="overviewNewsCount" class="admin-stat-value">—</div><div class="admin-stat-label">الأخبار المنشورة</div></article>
+        </div>
+        <div class="mt-5 bg-white rounded-2xl border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-3">
+          <div><h3 class="font-black text-slate-900">حالة البيانات</h3><p id="overviewStorageStatus" class="text-xs text-slate-500 mt-1">يتم التحقق من التخزين المحلي...</p></div>
+          <div class="flex flex-wrap gap-2"><button type="button" id="adminQuickBackup" class="admin-tool-btn admin-tool-primary"><i class="fa-solid fa-download"></i> نسخة احتياطية الآن</button><button type="button" id="adminQuickPreview" class="admin-tool-btn admin-tool-light"><i class="fa-solid fa-arrow-up-right-from-square"></i> معاينة الموقع</button></div>
+        </div>
+      </section>
+
+      <section id="admin-home" data-admin-panels="home about citizen contact" class="admin-settings-section scroll-mt-24 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" hidden>
+        <h2 class="text-xl font-black text-slate-900 mb-5"><i class="fa-solid fa-heading text-brand-600 ml-2"></i>عنوان الصفحة والرؤية والرسالة</h2>
+        <form id="siteTextForm" novalidate class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label data-admin-panel="home" class="text-sm font-bold text-slate-700">السطر الأول للعنوان<input id="adminTitle1" required class="admin-field mt-1" maxlength="100"></label>
+          <label data-admin-panel="home" class="text-sm font-bold text-slate-700">السطر الثاني للعنوان<input id="adminTitle2" required class="admin-field mt-1" maxlength="100"></label>
+          <label data-admin-panel="home" class="text-sm font-bold text-slate-700">السطر الثالث للعنوان<input id="adminTitle3" required class="admin-field mt-1" maxlength="100"></label>
+          <label data-admin-panel="home" class="text-sm font-bold text-slate-700">نبذة البرنامج<textarea id="adminHeroDescription" required rows="3" class="admin-field mt-1" maxlength="500"></textarea></label>
+          <label id="admin-about" data-admin-panel="about" class="text-sm font-bold text-slate-700">رؤيتنا<textarea id="adminVision" required rows="4" class="admin-field mt-1" maxlength="1000"></textarea></label>
+          <label data-admin-panel="about" class="text-sm font-bold text-slate-700">رسالتنا<textarea id="adminMission" required rows="4" class="admin-field mt-1" maxlength="1000"></textarea></label>
+          <label id="admin-citizen" data-admin-panel="citizen" class="text-sm font-bold text-slate-700">وصف فضاء المواطن<textarea id="adminCitizenDescription" required rows="3" class="admin-field mt-1" maxlength="500"></textarea></label>
+          <label id="admin-contact" data-admin-panel="contact" class="text-sm font-bold text-slate-700">وصف صفحة اتصل بنا<textarea id="adminContactDescription" required rows="3" class="admin-field mt-1" maxlength="500"></textarea></label>
+          <div data-admin-panel="contact" class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="text-sm font-bold text-slate-700">رابط واتساب<input id="contactWhatsapp" type="url" class="admin-field mt-1" placeholder="https://wa.me/رقمك"></label>
+            <label class="text-sm font-bold text-slate-700">رابط فيسبوك<input id="contactFacebook" type="url" class="admin-field mt-1" placeholder="https://facebook.com/صفحتك"></label>
+            <label class="text-sm font-bold text-slate-700">رابط إنستغرام<input id="contactInstagram" type="url" class="admin-field mt-1" placeholder="https://instagram.com/حسابك"></label>
+            <label class="text-sm font-bold text-slate-700">رابط تيليغرام<input id="contactTelegram" type="url" class="admin-field mt-1" placeholder="https://t.me/قناتك"></label>
+            <label class="text-sm font-bold text-slate-700">البريد الإلكتروني<input id="contactEmail" type="text" class="admin-field mt-1" placeholder="mailto:contact@example.com"></label>
+            <label class="text-sm font-bold text-slate-700">رابط الموقع<input id="contactWebsite" type="url" class="admin-field mt-1" placeholder="https://example.com"></label>
+            <p class="sm:col-span-2 text-xs font-normal text-slate-500">أدخل رابط كل حساب في حقله؛ اترك الحقل فارغًا لإظهار البطاقة دون رابط.</p>
+          </div>
+          <label data-admin-panel="contact" class="text-sm font-bold text-slate-700 md:col-span-2">روابط الصفحات الإضافية
+            <textarea id="adminContactLinks" rows="5" class="admin-field mt-1" placeholder="فيسبوك | https://facebook.com/صفحتك&#10;إنستغرام | https://instagram.com/حسابك"></textarea>
+            <span class="block text-xs font-normal text-slate-500 mt-1">أدخل رابطًا في كل سطر بهذا الشكل: اسم الصفحة | الرابط (حتى 20 رابطًا).</span>
+          </label>
+          <div data-admin-panel="home about citizen contact" class="md:col-span-2"><button class="admin-primary" type="submit"><i class="fa-solid fa-floppy-disk ml-2"></i>حفظ النصوص</button></div>
+        </form>
+      </section>
+
+      <section id="admin-candidates" data-admin-panel="candidates" class="admin-settings-section scroll-mt-24 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" hidden>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div><h2 class="text-xl font-black text-slate-900">إدارة المترشحين</h2><p class="text-xs text-slate-500 mt-1">تحرير البطاقة التقنية، إضافة مترشح أو حذفه.</p></div>
+          <button type="button" id="candidateNewBtn" class="admin-secondary"><i class="fa-solid fa-plus ml-2"></i>مترشح جديد</button>
+        </div>
+        <div id="adminCandidates" class="space-y-3 mb-6"></div>
+        <div class="candidate-editor-layout">
+        <div class="candidate-editor-preview border-t border-slate-200 pt-5 mt-5">
+          <h3 class="font-black text-slate-900 mb-1">معاينة البطاقة كما ستظهر في صفحة العرض</h3>
+          <p class="text-xs text-slate-500 mb-4">تتحدث المعاينة أثناء الكتابة، ولن تُحفظ البيانات حتى تضغط «حفظ بيانات المترشح».</p>
+          <div id="candidatePreview" class="max-w-sm" aria-live="polite"></div>
+        </div>
+        <form id="candidateForm" dir="rtl" class="candidate-editor-form hidden border-t border-slate-200 pt-5 mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input id="candidateIndex" type="hidden">
+          <label class="text-sm font-bold text-slate-700">الاسم الكامل<input id="candidateName" required class="admin-field mt-1" maxlength="100"></label>
+          <label class="text-sm font-bold text-slate-700">الصفة في القائمة<input id="candidateRole" required class="admin-field mt-1" maxlength="80"></label>
+          <label class="text-sm font-bold text-slate-700">مجال التركيز<input id="candidateSpecialty" class="admin-field mt-1" maxlength="100"></label>
+          <label class="text-sm font-bold text-slate-700">رابط الصورة (اختياري)<input id="candidatePhoto" class="admin-field mt-1" placeholder="mus.png أو https://..."></label>
+          <label class="text-sm font-bold text-slate-700">أو اختر صورة من جهازك<input id="candidatePhotoFile" type="file" accept="image/*" class="admin-field mt-1"></label>
+          <input id="candidatePhotoData" type="hidden">
+          <div class="md:col-span-2"><button type="button" id="candidatePhotoClearBtn" class="admin-secondary">إزالة الصورة</button><span class="text-xs text-slate-500 mr-2">سيتم تصغير الصورة المختارة لتناسب التخزين.</span></div>
+          <label class="text-sm font-bold text-slate-700 md:col-span-2">نبذة تعريفية<textarea id="candidateDescription" rows="2" class="admin-field mt-1" maxlength="500"></textarea></label>
+          <label class="text-sm font-bold text-slate-700 md:col-span-2">مجالات الاهتمام (افصل بينها بفاصلة)<input id="candidateInterests" class="admin-field mt-1" maxlength="300"></label>
+          <div class="md:col-span-2 flex gap-2"><button class="admin-primary" type="submit">حفظ بيانات المترشح</button><button type="button" id="candidateCancelBtn" class="admin-secondary">إلغاء</button></div>
+        </form>
+        </div>
+      </section>
+
+      <section id="admin-program" data-admin-panels="program priorities" class="admin-settings-section scroll-mt-24 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" hidden>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div><h2 class="text-xl font-black text-slate-900">البرنامج الانتخابي</h2><p class="text-xs text-slate-500 mt-1">عدّل عناوين المحاور والتزامات مراحل التنفيذ أو أضف محورًا.</p></div>
+          <button type="button" id="programNewBtn" class="admin-secondary"><i class="fa-solid fa-plus ml-2"></i>إضافة محور</button>
+        </div>
+        <form id="programForm" novalidate class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label data-admin-panel="program priorities" class="text-sm font-bold text-slate-700 md:col-span-2">المحور<select id="adminProgramSelect" class="admin-field mt-1"></select></label>
+          <label data-admin-panel="program priorities" class="text-sm font-bold text-slate-700 md:col-span-2">عنوان المحور<input id="adminProgramTitle" required class="admin-field mt-1" maxlength="180"></label>
+          <div data-admin-panel="program" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            <div class="space-y-3">
+              <label class="block text-sm font-bold text-slate-700">رابط غلاف البطاقة<input id="adminProgramPhoto" class="admin-field mt-1" placeholder="https://... أو مسار صورة محلي"></label>
+              <label class="block text-sm font-bold text-slate-700">أو اختر صورة الغلاف من جهازك<input id="adminProgramPhotoFile" type="file" accept="image/*" class="admin-field mt-1"></label>
+              <input id="adminProgramPhotoData" type="hidden">
+              <button type="button" id="adminProgramPhotoClear" class="admin-secondary">إزالة الغلاف</button>
+              <p class="text-xs font-normal text-slate-500">تُحفظ الصورة عند الضغط على «حفظ المحور» وتُستخدم غلافًا لبطاقة المحور في معاينة البرنامج.</p>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-700 mb-2">معاينة غلاف البطاقة</h3>
+              <div id="adminProgramCoverPreview" class="relative h-48 max-w-sm overflow-hidden rounded-2xl bg-slate-800 border border-slate-200" aria-live="polite"></div>
+            </div>
+          </div>
+          <label id="admin-priorities" data-admin-panel="priorities" class="text-sm font-bold text-slate-700">قريب — السنة الأولى<textarea id="adminPhaseNear" rows="7" class="admin-field mt-1" placeholder="التزام واحد في كل سطر"></textarea></label>
+          <label data-admin-panel="program" class="text-sm font-bold text-slate-700">متوسط — السنتان الثانية والثالثة<textarea id="adminPhaseMid" rows="7" class="admin-field mt-1" placeholder="التزام واحد في كل سطر"></textarea></label>
+          <label data-admin-panel="program" class="text-sm font-bold text-slate-700">بعيد — السنتان الرابعة والخامسة<textarea id="adminPhaseFar" rows="7" class="admin-field mt-1" placeholder="التزام واحد في كل سطر"></textarea></label>
+          <div data-admin-panel="program priorities" class="md:col-span-2 flex flex-wrap gap-2"><button type="submit" class="admin-primary">حفظ المحور</button><button type="button" id="programDeleteBtn" class="admin-danger">حذف المحور المحدد</button></div>
+        </form>
+      </section>
+
+      <section id="admin-news" data-admin-panel="news" class="admin-settings-section scroll-mt-24 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" hidden>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div><h2 class="text-xl font-black text-slate-900">إدارة الأخبار</h2><p class="text-xs text-slate-500 mt-1">أضف خبرًا أو عدّل خبرًا منشورًا أو احذفه.</p></div>
+          <button type="button" id="newsNewBtn" class="admin-secondary"><i class="fa-solid fa-plus ml-2"></i>خبر جديد</button>
+        </div>
+        <div id="adminNews" class="space-y-3 mb-6"></div>
+        <form id="newsForm" class="hidden border-t border-slate-200 pt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input id="newsIndex" type="hidden">
+          <label class="text-sm font-bold text-slate-700">عنوان الخبر<input id="newsTitle" required class="admin-field mt-1" maxlength="150"></label>
+          <label class="text-sm font-bold text-slate-700">التاريخ<input id="newsDate" type="date" required class="admin-field mt-1"></label>
+          <label class="text-sm font-bold text-slate-700">رابط صورة الغلاف (اختياري)<input id="newsPhoto" class="admin-field mt-1" placeholder="https://... أو مسار صورة محلي"></label>
+          <label class="text-sm font-bold text-slate-700">أو اختر صورة الغلاف من جهازك<input id="newsPhotoFile" type="file" accept="image/*" class="admin-field mt-1"></label>
+          <input id="newsPhotoData" type="hidden">
+          <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-[1fr_auto] items-end gap-3">
+            <div><h3 class="text-sm font-bold text-slate-700 mb-2">معاينة غلاف الخبر</h3><div id="newsCoverPreview" class="relative h-48 w-full max-w-xl overflow-hidden rounded-2xl bg-slate-800 border border-slate-200" aria-live="polite"></div></div>
+            <button type="button" id="newsPhotoClear" class="admin-secondary">إزالة الغلاف</button>
+          </div>
+          <label class="text-sm font-bold text-slate-700 md:col-span-2">التفاصيل<textarea id="newsBody" required rows="4" class="admin-field mt-1" maxlength="1500"></textarea></label>
+          <div class="md:col-span-2 flex gap-2"><button class="admin-primary" type="submit">حفظ الخبر</button><button type="button" id="newsCancelBtn" class="admin-secondary">إلغاء</button></div>
+        </form>
+      </section>
+
+      <section id="admin-backup" data-admin-panel="backup" class="admin-settings-section scroll-mt-24 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" hidden>
+        <h2 class="text-xl font-black text-slate-900 mb-2"><i class="fa-solid fa-box-archive text-brand-600 ml-2"></i>النسخ الاحتياطي والاستعادة</h2>
+        <p class="text-sm text-slate-500 mb-5">احتفظ بنسخة من النصوص والمترشحين ومحاور البرنامج والأخبار. الاستعادة تستبدل البيانات الحالية بعد تأكيدك.</p>
+        <div class="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div><h3 class="font-black text-slate-900">قاعدة بيانات Supabase</h3><p id="supabaseAuthStatus" class="mt-1 text-xs text-slate-600">جارٍ الاتصال بقاعدة البيانات...</p></div>
+            <button type="button" id="supabaseSignOut" class="admin-secondary hidden">تسجيل الخروج</button>
+          </div>
+          <form id="supabaseAuthForm" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input id="supabaseEmail" type="email" autocomplete="username" required class="admin-field" placeholder="البريد الإلكتروني لحساب الإدارة">
+            <input id="supabasePassword" type="password" autocomplete="current-password" required class="admin-field" placeholder="كلمة المرور">
+            <div class="sm:col-span-2 flex flex-wrap items-center gap-2">
+              <button type="submit" class="admin-primary">تسجيل الدخول إلى Supabase</button>
+              <button type="button" id="supabasePublishLocal" class="admin-secondary hidden">نشر المحتوى المحلي إلى قاعدة البيانات</button>
+            </div>
+          </form>
+          <p class="mt-3 text-xs text-slate-500">أنشئ حساب الإدارة في Supabase Auth، ثم أضف معرّف المستخدم إلى جدول site_admins باستخدام ملف الإعداد.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" id="exportBackupBtn" class="admin-tool-btn admin-tool-primary"><i class="fa-solid fa-file-export"></i> تصدير نسخة JSON</button>
+          <label for="importBackupFile" class="admin-tool-btn admin-tool-light cursor-pointer"><i class="fa-solid fa-file-import"></i> استيراد نسخة احتياطية</label>
+          <input type="file" id="importBackupFile" accept=".json,application/json" class="hidden">
+        </div>
+        <p id="backupLastDate" class="text-xs text-slate-400 mt-4">يتم إنشاء النسخة الاحتياطية على جهازك فقط.</p>
+        <div class="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 leading-relaxed"><i class="fa-solid fa-triangle-exclamation ml-1"></i>لا تحفظ النسخة الاحتياطية على جهاز عام. ملفات النسخ قد تحتوي على جميع بيانات المحتوى التي أدخلتها.</div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+'use strict';
+
+/* البرنامج الانتخابي 2026–2031: المحاور السبعة المفصلة في الوثيقة */
+const programData = [
+  { ico:'fa-solid fa-road', photo:'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=700&q=80', title:'التهيئة الحضرية والبنية التحتية والطرق والإنارة', phases:{
+    'قريب — السنة 1':['تشخيص شامل للطرق والأرصفة والإنارة','معالجة الحفر والنقاط السوداء','إصلاح الإنارة','إزالة الردوم','تأهيل الأرصفة بمحيط المدارس والمساجد','إنشاء قاعدة بيانات رقمية','تهيئة المداخل','إعداد برنامج صيانة سنوي'],
+    'متوسط — السنتان 2–3':['تعميم الإنارة ومصابيح LED','إنشاء أرصفة وممرات آمنة','تهيئة مواقف سيارات','إنشاء ساحات عمومية ومساحات خضراء','استكمال الصرف الصحي والمياه','تهيئة الأحياء القديمة','تسمية الشوارع وترقيم المباني'],
+    'بعيد — السنتان 4–5':['تعبيد الطرق','فتح طرق جديدة','إنارة ذكية','تركيب كاميرات مراقبة','تنفيذ برنامج «حي نموذجي»','وضع مخطط صيانة وقائية','إصدار تقارير نصف سنوية'] } },
+  { ico:'fa-solid fa-leaf', photo:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=700&q=80', title:'الصحة العمومية والوقاية والبيئة والنظافة', phases:{
+    'قريب — السنة 1':['إعداد مخطط بلدي للنظافة','إطلاق برنامج دائم للنظافة في كل الأحياء','دعم وسائل الجمع','إزالة المفارغ العشوائية','تنظيم حملات نظافة شهرية','مكافحة الحشرات والقوارض والحيوانات الضالة','تنظيف المقبرة','تشكيل فرق تدخل سريع'],
+    'متوسط — السنتان 2–3':['زيادة المساحات الخضراء','إطلاق مبادرة «شجرة لكل أسرة»','تهيئة الحدائق','إنشاء فضاءات لعب آمنة','فرز النفايات وإعادة التدوير','تنظيم مسابقات أجمل حي','تنظيم أيام فحص طبي وحملات تلقيح'],
+    'بعيد — السنتان 4–5':['إعداد مخطط بيئي طويل المدى','التوجه نحو الطاقات النظيفة','رقمنة قطاع النظافة','إنشاء قاعدة بيانات بيئية','دعم الاقتصاد الأخضر','إصدار تقرير بيئي سنوي'] } },
+  { ico:'fa-solid fa-briefcase', photo:'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=700&q=80', title:'التشغيل والتنمية المحلية والاستثمار', phases:{
+    'قريب — السنة 1':['إعداد خريطة اقتصادية','فتح شباك استقبال المستثمرين','إعداد دليل استثماري','جرد العقارات القابلة للاستثمار','تنظيم لقاءات مع التجار والفلاحين','تبسيط الإجراءات','التنسيق مع أجهزة دعم التشغيل'],
+    'متوسط — السنتان 2–3':['تهيئة فضاءات للأنشطة الاقتصادية','تنظيم معارض للمنتجات المحلية','دعم الحرفيين والمبادرات النسوية','ربط التكوين بسوق العمل','دعم التعاونيات المحلية','تنمية الاقتصاد الرقمي والأخضر'],
+    'بعيد — السنتان 4–5':['إعداد رؤية اقتصادية طويلة المدى','إنشاء منطقة نشاطات','استقطاب استثمارات','دعم الاقتصاد الدائري','تطوير السياحة المحلية','إصدار تقرير اقتصادي سنوي'] } },
+  { ico:'fa-solid fa-school', photo:'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=700&q=80', title:'التربية والتعليم والتكوين ورعاية الطفولة والمدارس القرآنية', phases:{
+    'قريب — السنة 1':['تشخيص المدارس الابتدائية','تنفيذ صيانة سنوية قبل الدخول المدرسي','تحسين الإطعام والتدفئة والمرافق الصحية','إنشاء ممرات آمنة','تحسين النقل المدرسي','تكريم المتفوقين','إطلاق جائزة البلدية للتميز ولحفظة القرآن','تنظيم يوم للمعلم'],
+    'متوسط — السنتان 2–3':['إنشاء مدارس جديدة وتوسعة القائم للحد من الاكتظاظ','تهيئة ساحات رياضية وفضاءات خضراء','دعم المدارس القرآنية ومسابقات الحفظ','تنظيم مخيمات صيفية','إنشاء نوادٍ للقراءة ومعارض كتاب','تنظيم أيام إعلامية للتكوين المهني'],
+    'بعيد — السنتان 4–5':['إنشاء مجمعات مدرسية','إنشاء مكتبات جوارية','إطلاق مبادرة «مدرسة خضراء»','إصدار تقارير سنوية وإجراء تقييم دوري'] } },
+  { ico:'fa-solid fa-futbol', photo:'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80', title:'الشباب والرياضة والثقافة والحياة الجمعوية', phases:{
+    'قريب — السنة 1':['جرد المرافق','صيانة الملاعب الجوارية وإنارتها','إعداد رزنامة سنوية للأنشطة','تنظيم دورات رياضية بين الأحياء','دعم الجمعيات بمعايير شفافة','توفير فضاءات مجانية','تنظيم «يوم مع الشباب»','إطلاق جائزة الإبداع الشبابي','تكريم الرياضيين'],
+    'متوسط — السنتان 2–3':['إنشاء ملاعب جديدة','إنشاء قاعات متعددة النشاطات','تهيئة فضاءات للأطفال','إنشاء نوادٍ للمطالعة والروبوتيك','تشكيل مجلس استشاري للشباب','تنظيم ملتقى ومعرض سنوي','دعم رياضة المرأة وذوي الاحتياجات الخاصة','التوعية بمخاطر المخدرات','إطلاق مبادرة «حي نشيط»'],
+    'بعيد — السنتان 4–5':['إنشاء مركب رياضي وثقافي','إطلاق جائزة العمل التطوعي','إنشاء مكتبة عصرية','إدماج الأنشطة في الفعاليات السياحية','إصدار تقرير سنوي'] } },
+  { ico:'fa-solid fa-hand-holding-heart', photo:'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=700&q=80', title:'التضامن الاجتماعي والأسرة وذوو الاحتياجات الخاصة وكبار السن', phases:{
+    'قريب — السنة 1':['إنشاء قاعدة بيانات اجتماعية','فتح شباك استقبال وتوجيه','اعتماد معايير شفافة للمساعدات','تنظيم حملات رمضان والأعياد والدخول المدرسي','تنظيم حملات للتبرع بالدم','تهيئة المرافق لذوي الاحتياجات الخاصة','تكريم كبار السن','إنشاء سجل للجمعيات الاجتماعية','التنسيق مع الهلال الأحمر'],
+    'متوسط — السنتان 2–3':['مواصلة تهيئة المرافق','إنشاء فضاءات ترفيهية لذوي الاحتياجات الخاصة','تنظيم ملتقى للعمل الاجتماعي','دعم كفالة الأيتام','دعم الصحة النفسية','مكافحة الإدمان والعنف الأسري','تنظيم قوافل تضامنية','إبرام اتفاقيات مع الجمعيات'],
+    'بعيد — السنتان 4–5':['إنشاء مركز متعدد الخدمات الاجتماعية','إنشاء منصة إلكترونية للتطوع','إعداد دليل للجمعيات','تشكيل مجلس استشاري اجتماعي','إطلاق جائزة العمل الإنساني','إصدار تقرير اجتماعي سنوي'] } },
+  { ico:'fa-solid fa-laptop', photo:'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=700&q=80', title:'الحوكمة المحلية والرقمنة والشفافية وجودة الخدمة العمومية', phases:{
+    'قريب — السنة 1':['إطلاق منصة إلكترونية رسمية','إطلاق تطبيق هاتفي','إنشاء منصة «انشغالاتي» مع رقم تتبع','إنشاء لوحة متابعة إلكترونية','فتح مكتب موحد للاستقبال','إعداد ميثاق لجودة الاستقبال','إعداد دليل الخدمات','إنشاء أرشيف إلكتروني','تخصيص يوم استقبال أسبوعي','إطلاق صفحات رسمية على التواصل الاجتماعي','تكوين الموظفين'],
+    'متوسط — السنتان 2–3':['إتاحة حجز المواعيد إلكترونيًا','نشر برنامج الأشغال والميزانية المبسطة','إنشاء لوحة قيادة بمؤشرات الأداء','إنشاء فضاء إلكتروني للجمعيات','تنظيم لقاءات تشاورية','إجراء استطلاعات رضا','رقمنة متابعة المشاريع','تكريم الموظفين المتميزين','اعتماد مؤشرات زمنية لمعالجة الملفات'],
+    'بعيد — السنتان 4–5':['مواكبة التحول الرقمي الوطني','إصدار تقرير سنوي شامل عن تنفيذ البرنامج','إصدار تقرير أداء المجلس','إتاحة المتابعة الرقمية للمداولات','إصدار تقرير ختامي يقارن الالتزامات بالإنجاز'] } }
+].map(item => ({ ...item, points: Object.values(item.phases).flat() }));
+
+const ROUTES = ['home','about','candidate','program','projects','citizen','news','contact'];
+let currentRoute = 'home';
+const STORAGE_KEY = 'nabniha-dashboard-v1';
+let supabaseSession = null;
+const defaultSiteText = {
+  title1: 'برنامج واقعي...',
+  title2: 'التزام أخلاقي...',
+  title3: 'والإنجاز عهد نلتزم به',
+  description: 'البرنامج الانتخابي لبلدية الخنق 2026–2031؛ تشخيص للواقع، وترتيب للأولويات، والتزامات تتدرج من صلاحيات البلدية إلى الشراكة والترافع.',
+  vision: 'برنامج واقعي... التزام أخلاقي... والإنجاز عهد نلتزم به.',
+  mission: '«معًا ننجز — من أجل بلدية أفضل». الموقع: بلدية الخنق، دائرة عين ماضي، ولاية الأغواط.',
+  citizenDescription: 'صوتك أساس برنامجنا — اقترح مشروعًا لحيك وصوّت للأولويات التي تهم أسرتك.',
+  contactDescription: 'نحن في خدمة ساكنة بلدية الخنق عبر جميع القنوات والمنصات.'
+};
+let siteText = { ...defaultSiteText };
+let contactLinks = [];
+const defaultContactChannels = { whatsapp: '', facebook: '', instagram: '', telegram: '', email: 'mailto:contact@nabniha.ma', website: '' };
+let contactChannels = { ...defaultContactChannels };
+let candidateData = [{
+  name: 'مصطفى قمري',
+  role: 'وكيل القائمة',
+  specialty: 'التنمية المحلية',
+  photo: 'mus.png',
+  description: 'مهتم بالتنمية المحلية، الرقمنة الإدارية وتطوير الخدمات الميدانية لساكنة الخنق.',
+  interests: ['الرقمنة الإدارية', 'الخدمات الميدانية', 'التنمية المحلية']
+}];
+let newsData = [];
+
+const $ = id => document.getElementById(id);
+const $$ = sel => [...document.querySelectorAll(sel)];
+const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[char]));
+function safeImageUrl(value) {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (url.length <= 1700000 && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(url)) return url;
+  if (/^https?:\/\/\S+$/i.test(url)) {
+    try {
+      if (['http:', 'https:'].includes(new URL(url).protocol)) return url;
+    } catch {}
+  }
+  if (/^(?:\.{0,2}\/|\/)?[a-z0-9_-]+(?:\/[a-z0-9_.-]+)*\.(?:png|jpe?g|webp|gif)$/i.test(url)) return url;
+  return '';
+}
+function normalizeContactLinks(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(item => item && typeof item.label === 'string' && typeof item.url === 'string')
+    .map(item => ({ label: item.label.trim().slice(0, 60), url: item.url.trim() }))
+    .filter(item => item.label && /^https?:\/\//i.test(item.url) && item.url.length <= 2048);
+}
+function normalizeContactChannels(value) {
+  const links = { ...defaultContactChannels };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return links;
+  for (const key of Object.keys(links)) {
+    if (typeof value[key] !== 'string') continue;
+    const url = value[key].trim();
+    try {
+      const protocol = new URL(url).protocol;
+      if (url.length <= 2048 && (key === 'email' ? ['mailto:', 'http:', 'https:'].includes(protocol) : ['http:', 'https:'].includes(protocol))) links[key] = url;
+    } catch {}
+  }
+  return links;
+}
+function loadDashboardState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.siteText && typeof saved.siteText === 'object') {
+      Object.keys(defaultSiteText).forEach(key => {
+        if (typeof saved.siteText[key] === 'string') siteText[key] = saved.siteText[key];
+      });
+    }
+    contactLinks = normalizeContactLinks(saved.contactLinks);
+    contactChannels = normalizeContactChannels(saved.contactChannels);
+    if (Array.isArray(saved.candidates)) {
+      candidateData = saved.candidates.filter(item => item && typeof item.name === 'string').map(item => ({
+        name: item.name, role: String(item.role || 'عضو القائمة'), specialty: String(item.specialty || ''),
+        photo: safeImageUrl(item.photo), description: String(item.description || ''),
+        interests: Array.isArray(item.interests) ? item.interests.map(String) : []
+      }));
+    }
+    if (Array.isArray(saved.program) && saved.program.length) {
+      const restored = saved.program.filter(item => item && typeof item.title === 'string' && item.phases && typeof item.phases === 'object');
+      if (restored.length) {
+        programData.splice(0, programData.length, ...restored.map(item => ({
+          ico: /^fa-[\w -]+$/.test(item.ico || '') ? item.ico : 'fa-solid fa-layer-group',
+          photo: safeImageUrl(item.photo),
+          title: item.title,
+          phases: Object.fromEntries(Object.entries(item.phases).map(([phase, points]) => [phase, Array.isArray(points) ? points.map(String) : []])),
+          points: Object.values(item.phases).flat().map(String)
+        })));
+      }
+    }
+    if (Array.isArray(saved.news)) newsData = saved.news.filter(item => item && typeof item.title === 'string' && typeof item.body === 'string')
+      .map(item => ({ title: item.title, date: String(item.date || ''), body: item.body, photo: safeImageUrl(item.photo) }));
+  } catch (error) {
+    console.error('تعذر تحميل بيانات لوحة التحكم المحفوظة.', error);
+    showDashboardStatus('تعذر تحميل التغييرات المحفوظة؛ يتم عرض البيانات الافتراضية.', true);
+  }
+}
+function hasPublishedSupabaseContent(content) {
+  return Boolean(content && typeof content === 'object' && (
+    ['candidates', 'program', 'news', 'contactLinks'].some(key => Array.isArray(content[key]) && content[key].length > 0) ||
+    (content.contactChannels && Object.values(content.contactChannels).some(Boolean)) ||
+    (content.siteText && Object.values(content.siteText).some(value => typeof value === 'string' && value.trim()))
+  ));
+}
+function saveDashboardState() {
+  try {
+    const content = {
+      siteText, contactLinks, contactChannels, candidates: candidateData, program: programData, news: newsData
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+    updateAdminOverview();
+    const client = window.nabnihaSupabase;
+    if (client && supabaseSession?.user) {
+      client.from('site_content').upsert({ id: 1, content }, { onConflict: 'id' })
+        .then(({ error }) => {
+          if (error) {
+            console.error('تعذر مزامنة التغييرات مع Supabase.', error);
+            showDashboardStatus('حُفظت التغييرات محليًا، لكن تعذرت مزامنتها مع Supabase. تحقق من صلاحيات حساب الإدارة.', true);
+          } else showDashboardStatus('تم حفظ التغييرات ومزامنتها مع Supabase.');
+        })
+        .catch(error => {
+          console.error('تعذر الاتصال بـ Supabase أثناء الحفظ.', error);
+          showDashboardStatus('حُفظت التغييرات محليًا، لكن تعذر الاتصال بـ Supabase.', true);
+        });
+    } else {
+      showDashboardStatus('تم الحفظ محليًا. سجّل الدخول إلى Supabase لمزامنة التغييرات مع قاعدة البيانات.');
+    }
+    return true;
+  } catch (error) {
+    console.error('تعذر حفظ بيانات لوحة التحكم.', error);
+    showDashboardStatus('تعذر حفظ التغييرات. تحقق من مساحة التخزين في المتصفح.', true);
+    return false;
+  }
+}
+function showDashboardStatus(message, isError = false) {
+  const status = $('adminStatus');
+  if (!status) return;
+  status.className = `rounded-xl p-3 text-sm font-bold ${isError ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`;
+  status.textContent = message;
+}
+
+function updateAdminOverview() {
+  const commitments = programData.reduce((total, item) => total + (Array.isArray(item.points) ? item.points.length : Object.values(item.phases || {}).reduce((n, list) => n + (Array.isArray(list) ? list.length : 0), 0)), 0);
+  const values = { overviewCandidateCount: candidateData.length, overviewProgramCount: programData.length, overviewCommitmentCount: commitments, overviewNewsCount: newsData.length };
+  Object.entries(values).forEach(([id, value]) => { const node = $(id); if (node) node.textContent = String(value); });
+  const status = $('overviewStorageStatus');
+  if (status) status.textContent = localStorage.getItem(STORAGE_KEY) ? 'توجد بيانات محفوظة محليًا على هذا المتصفح.' : 'لم تُحفظ تعديلات بعد؛ البيانات الحالية هي البيانات الافتراضية.';
+  const date = $('backupLastDate');
+  if (date) date.textContent = 'ملاحظة: أنشئ نسخة احتياطية قبل حذف بيانات المتصفح أو تغيير الجهاز.';
+}
+
+function downloadDashboardBackup() {
+  const payload = { app: 'nabniha-dashboard', version: 1, exportedAt: new Date().toISOString(), siteText, contactLinks, contactChannels, candidates: candidateData, program: programData, news: newsData };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `nabniha-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+  showDashboardStatus('تم تجهيز النسخة الاحتياطية للتنزيل.');
+}
+
+/* Routing Handler */
+function showView(route) {
+  if (!ROUTES.includes(route)) route = 'home';
+  currentRoute = route;
+
+  // Toggle pane visibility
+  ROUTES.forEach(r => {
+    const pane = $('view-' + r);
+    if (pane) pane.classList.toggle('active', r === route);
+  });
+
+  // Update navigation styling
+  $$('[data-route]').forEach(link => {
+    const isTarget = link.dataset.route === route;
+    if (link.classList.contains('nav-item')) {
+      link.classList.toggle('bg-white/15', isTarget);
+      link.classList.toggle('text-white', isTarget);
+      link.classList.toggle('text-gold-400', isTarget);
+    }
+  });
+
+  // Close mobile nav if open
+  $('mobileDropdown').classList.add('hidden');
+  $('menuIcon').className = 'fa-solid fa-bars text-lg';
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function handleHashChange() {
+  const hash = (location.hash || '').replace('#', '').trim();
+  showView(hash || 'home');
+}
+
+/* Build Cards */
+function createProgramCard(item) {
+  const card = document.createElement('div');
+  card.className = 'group relative rounded-3xl overflow-hidden pcard-bg p-6 text-white cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between min-h-[220px]';
+  card.style.backgroundImage = `url('${item.photo}')`;
+
+  card.innerHTML = `
+    <div class="relative z-10 flex items-start justify-between">
+      <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-gold-400 text-xl group-hover:bg-brand-600 group-hover:text-white transition duration-300">
+        <i class="${item.ico}"></i>
+      </div>
+      <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-slate-200">
+        ${item.points.length} التزامات
+      </span>
+    </div>
+
+    <div class="relative z-10 mt-6">
+      <h3 class="text-lg font-black text-white group-hover:text-gold-400 transition mb-2">${escapeHTML(item.title)}</h3>
+      <div class="flex items-center gap-2 text-xs font-bold text-slate-300 group-hover:text-white transition">
+        <span>عرض التفاصيل</span>
+        <i class="fa-solid fa-arrow-left text-[10px] transform group-hover:-translate-x-1 transition"></i>
+      </div>
+    </div>
+  `;
+
+  card.addEventListener('click', () => openModal(item));
+  return card;
+}
+
+/* Modal Logic */
+function openModal(item) {
+  const modal = $('modal');
+  $('modalTitle').textContent = item.title;
+  $('modalIcon').className = item.ico;
+
+  const list = $('modalList');
+  list.innerHTML = '';
+  Object.entries(item.phases).forEach(([phase, points]) => {
+    const section = document.createElement('section');
+    section.className = 'mb-5 last:mb-0';
+    const heading = document.createElement('h4');
+    heading.className = 'sticky top-0 bg-white py-2 text-brand-700 font-black text-sm border-b border-slate-200 mb-2';
+    heading.textContent = phase;
+    section.appendChild(heading);
+    points.forEach((point, idx) => {
+      const li = document.createElement('div');
+      li.className = 'flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-800 text-sm font-semibold mb-2';
+      li.innerHTML = `<span class="w-6 h-6 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold flex-shrink-0">${idx + 1}</span><span></span>`;
+      li.lastElementChild.textContent = point;
+      section.appendChild(li);
+    });
+    list.appendChild(section);
+  });
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  const modal = $('modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.body.style.overflow = '';
+}
+
+/* Featured candidates carousel */
+function setupFeaturedCandidateSlider() {
+  const slider = $('featuredCandidateSlider');
+  const directory = $('candidateDirectory');
+  if (!slider || !directory) return;
+  const slideHost = $('featuredCandidateSlides');
+  if (!slideHost) return;
+  const candidateProfiles = candidateData.map((candidate, index) => ({
+    ...candidate, rank: index + 1, icon: index === 0 ? 'fa-user-tie' : 'fa-user',
+    iconColor: index === 0 ? 'text-emerald-300' : 'text-slate-200',
+    iconBg: index === 0 ? 'from-brand-700 to-navy-800' : 'from-slate-700 to-navy-800',
+    border: index === 0 ? 'border-brand-500/50' : 'border-white/20'
+  }));
+  directory.innerHTML = candidateProfiles.length ? candidateProfiles.map(candidate => `
+    <article class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-slate-100 text-brand-700 flex items-center justify-center text-lg font-black shrink-0">${candidate.rank}</div>
+      <div class="min-w-0"><span class="text-xs text-brand-700 font-bold">${escapeHTML(candidate.role)}</span><h3 class="text-base font-black text-slate-900 truncate">${escapeHTML(candidate.name)}</h3><p class="text-xs text-slate-500 mt-1">${escapeHTML(candidate.specialty)}</p></div>
+    </article>`).join('') : '<p class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">لم تتم إضافة مترشحين بعد.</p>';
+  slideHost.innerHTML = candidateProfiles.map((candidate, index) => `
+    <article class="candidate-slide bg-gradient-to-b from-navy-800 to-navy-950 p-5 sm:p-6 rounded-3xl border border-white/15 shadow-2xl overflow-hidden" data-candidate-slide ${index ? 'hidden' : ''}>
+      <div class="flex items-start gap-4 rounded-2xl bg-slate-900 border border-white/10 p-4 mb-4">
+        <div class="${candidate.photo ? 'w-28 aspect-[2/3] sm:w-32' : 'w-16 h-16 sm:w-20 sm:h-20'} rounded-2xl bg-gradient-to-tr ${candidate.iconBg} flex items-center justify-center text-white border-2 ${candidate.border} shrink-0 shadow-md overflow-hidden">${candidate.photo ? `<img src="${escapeHTML(candidate.photo)}" alt="صورة ${escapeHTML(candidate.name)}" class="w-full h-full object-cover">` : `<i class="fa-solid ${candidate.icon} text-2xl sm:text-3xl ${candidate.iconColor}" aria-hidden="true"></i>`}</div>
+        <div class="min-w-0"><span class="text-xs font-bold text-gold-400">${escapeHTML(candidate.role)}</span><h3 class="text-lg font-extrabold text-white">${escapeHTML(candidate.name)}</h3></div>
+      </div>
+      <h4 class="text-xs font-bold text-slate-300 mb-2"><i class="fa-solid fa-id-card text-gold-400 ml-1" aria-hidden="true"></i> بطاقة تقنية</h4>
+      <dl class="grid grid-cols-2 gap-2 mb-4 text-xs">
+        <div class="rounded-xl bg-white/5 border border-white/5 p-2.5"><dt class="text-slate-400">الصفة</dt><dd class="text-white font-bold mt-1">${escapeHTML(candidate.role)}</dd></div>
+        <div class="rounded-xl bg-white/5 border border-white/5 p-2.5"><dt class="text-slate-400">مجال التركيز</dt><dd class="text-white font-bold mt-1">${escapeHTML(candidate.specialty)}</dd></div>
+      </dl>
+      ${candidate.description ? `<p class="text-xs leading-relaxed text-slate-300 mb-3">${escapeHTML(candidate.description)}</p>` : ''}
+      ${candidate.interests.length ? `<div class="flex flex-wrap gap-1.5 mb-4" aria-label="مجالات الاهتمام">${candidate.interests.map(item => `<span class="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/10 text-slate-200">${escapeHTML(item)}</span>`).join('')}</div>` : ''}
+      <div class="mt-4 pt-3 border-t border-white/10 text-center">
+        <a href="#candidate" data-route="candidate" class="text-xs font-bold text-gold-400 hover:text-gold-300 inline-flex items-center justify-center gap-1.5 transition"><span>التعرف على كافة أعضاء القائمة</span><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></a>
+      </div>
+    </article>`).join('') || '<div class="rounded-3xl border border-white/15 bg-navy-900 p-6 text-center text-slate-300">أضف مترشحًا من لوحة التحكم لعرض بطاقته.</div>';
+
+  const slides = $$('[data-candidate-slide]');
+  const select = $('candidateSlideSelect');
+  const count = $('candidateSlideCount');
+  const prev = $('candidatePrev');
+  const next = $('candidateNext');
+  if (select) select.innerHTML = candidateProfiles.map((candidate, index) => `<option value="${index}">${String(index + 1).padStart(2, '0')} · ${escapeHTML(candidate.name)}</option>`).join('');
+  if (count) count.textContent = candidateProfiles.length ? `1 / ${candidateProfiles.length}` : '0 / 0';
+  if (select) select.value = '0';
+  if (!slider.dataset.carouselReady) {
+    let active = 0;
+    let timer = null;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const show = index => {
+      const currentSlides = $$('[data-candidate-slide]');
+      if (!currentSlides.length) return;
+      active = (index + currentSlides.length) % currentSlides.length;
+      currentSlides.forEach((slide, i) => {
+        slide.hidden = i !== active;
+        slide.classList.remove('is-entering');
+      });
+      if (!reducedMotion) {
+        void currentSlides[active].offsetWidth;
+        currentSlides[active].classList.add('is-entering');
+      }
+      if (select) select.value = String(active);
+      if (count) count.textContent = `${active + 1} / ${currentSlides.length}`;
+    };
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+    const start = () => {
+      stop();
+      if (reducedMotion || document.hidden || slider.matches(':hover') || slider.contains(document.activeElement)) return;
+      timer = setInterval(() => {
+        if ($('view-home')?.classList.contains('active')) show(active + 1);
+      }, 5000);
+    };
+    prev.addEventListener('click', () => { show(active - 1); start(); });
+    next.addEventListener('click', () => { show(active + 1); start(); });
+    select.addEventListener('change', () => { show(+select.value); start(); });
+    slider.addEventListener('mouseenter', stop);
+    slider.addEventListener('mouseleave', start);
+    slider.addEventListener('focusin', stop);
+    slider.addEventListener('focusout', event => { if (!slider.contains(event.relatedTarget)) start(); });
+    slider.addEventListener('keydown', event => {
+      if (event.key === 'ArrowLeft') { event.preventDefault(); show(active + 1); start(); }
+      if (event.key === 'ArrowRight') { event.preventDefault(); show(active - 1); start(); }
+    });
+    document.addEventListener('visibilitychange', start);
+    slider.dataset.carouselReady = 'true';
+  }
+}
+
+/* Category Projects View Generator */
+function renderProjectsByCategory() {
+  const container = $('projectsByCategory');
+  if (!container) return;
+  container.innerHTML = '';
+
+  programData.forEach((item, idx) => {
+    const box = document.createElement('div');
+    box.className = 'bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition';
+    box.innerHTML = `
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-sm">
+          <i class="${item.ico}"></i>
+        </div>
+        <h4 class="font-bold text-slate-900 text-base">${escapeHTML(item.title)}</h4>
+      </div>
+      <p class="text-xs text-slate-500 leading-relaxed">${item.points.slice(0, 3).map(escapeHTML).join(' • ')}</p>
+      <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+        <span class="font-bold text-slate-400">ضمن خطة التنفيذ المرحلية</span>
+        <button class="text-brand-600 font-bold hover:underline" data-program-idx="${idx}">عرض الكل</button>
+      </div>
+    `;
+    box.querySelector('button').addEventListener('click', () => openModal(item));
+    container.appendChild(box);
+  });
+}
+
+function renderProgramValues() {
+  const grid = $('valuesGrid');
+  if (!grid) return;
+  const values = [
+    ['fa-hand-holding-heart','الأمانة'],['fa-scale-balanced','النزاهة'],['fa-eye','الشفافية'],
+    ['fa-equals','العدالة والإنصاف'],['fa-user-check','المسؤولية والمحاسبة'],['fa-people-group','المشاركة'],
+    ['fa-award','الإتقان والاحترافية'],['fa-gavel','احترام القانون']
+  ];
+  grid.innerHTML = values.map(([icon, value]) => `
+    <article class="bg-white p-7 rounded-2xl border border-slate-200/80 shadow-sm text-center">
+      <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-4 text-xl"><i class="fa-solid ${icon}" aria-hidden="true"></i></div>
+      <h4 class="font-bold text-slate-900 text-base">${value}</h4>
+    </article>`).join('');
+}
+
+function renderYearOnePreviews() {
+  const projectsGrid = $('projectsYearOneGrid');
+  if (projectsGrid) {
+    projectsGrid.innerHTML = programData.map(item => `
+      <article class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div class="flex items-start gap-3 mb-3"><span class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0"><i class="${item.ico}" aria-hidden="true"></i></span><h3 class="font-bold text-slate-900 text-sm leading-relaxed">${escapeHTML(item.title)}</h3></div>
+        <ul class="space-y-1.5 text-xs text-slate-600">${(item.phases['قريب — السنة 1'] || []).slice(0, 3).map(point => `<li class="flex gap-2"><i class="fa-solid fa-check text-brand-600 mt-1" aria-hidden="true"></i><span>${escapeHTML(point)}</span></li>`).join('')}</ul>
+        <button class="mt-3 text-xs text-brand-700 font-bold hover:underline" data-program-idx="${programData.indexOf(item)}">عرض الالتزامات والآفاق</button>
+      </article>`).join('');
+    projectsGrid.querySelectorAll('[data-program-idx]').forEach(button => button.addEventListener('click', () => openModal(programData[+button.dataset.programIdx])));
+  }
+
+  const homeGrid = $('homeYearOnePreview');
+  if (homeGrid) {
+    const highlights = [programData[0], programData[1], programData[6]].filter(Boolean);
+    homeGrid.innerHTML = highlights.map(item => `
+      <article class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm text-center">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-4 text-xl"><i class="${item.ico}" aria-hidden="true"></i></div>
+        <h3 class="font-bold text-slate-900 text-base mb-2">${escapeHTML(item.title)}</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">${(item.phases['قريب — السنة 1'] || []).slice(0, 2).map(escapeHTML).join('، ')}.</p>
+      </article>`).join('');
+  }
+}
+
+/* Setup Filters */
+function setupProgramView() {
+  const grid = $('programGrid');
+  const preview = $('homeProgramPreview');
+  const filter = $('programFilter');
+  const search = $('programSearch');
+  const empty = $('programEmpty');
+
+  // Render Preview on Home
+  if (preview) {
+    preview.innerHTML = '';
+    programData.slice(0, 7).forEach(item => preview.appendChild(createProgramCard(item)));
+  }
+
+  // Render Full Program
+  function render(items) {
+    grid.innerHTML = '';
+    if (items.length === 0) {
+      empty.classList.remove('hidden');
+    } else {
+      empty.classList.add('hidden');
+      items.forEach(item => grid.appendChild(createProgramCard(item)));
+    }
+  }
+
+  // Fill Dropdown
+  const selectedFilter = filter ? filter.value : '';
+  if (filter) {
+    filter.innerHTML = '<option value="">جميع المحاور</option>';
+    programData.forEach((item, i) => {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = item.title;
+      filter.appendChild(opt);
+    });
+    filter.value = selectedFilter && +selectedFilter < programData.length ? selectedFilter : '';
+  }
+
+  function filterAction() {
+    const q = search ? search.value.trim().toLowerCase() : '';
+    const cat = filter ? filter.value : '';
+
+    const filtered = programData.filter((item, i) => {
+      const matchQ = !q || item.title.toLowerCase().includes(q) || item.points.some(p => p.toLowerCase().includes(q));
+      const matchCat = !cat || String(i) === cat;
+      return matchQ && matchCat;
+    });
+
+    render(filtered);
+  }
+
+  if (!grid.dataset.filtersReady) {
+    if (search) search.addEventListener('input', filterAction);
+    if (filter) filter.addEventListener('change', filterAction);
+    grid.dataset.filtersReady = 'true';
+  }
+  filterAction();
+}
+
+/* Forms */
+function setupForms() {
+  // Suggest Form
+  const sgForm = $('suggestForm');
+  if (sgForm) {
+    sgForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = $('sgName').value.trim();
+      const area = $('sgArea').value.trim();
+      const idea = $('sgIdea').value.trim();
+      const msg = $('sgMsg');
+
+      let valid = true;
+      $('sgNameGroup').querySelector('.err').classList.toggle('hidden', name.length >= 3);
+      if (name.length < 3) valid = false;
+
+      $('sgAreaGroup').querySelector('.err').classList.toggle('hidden', !!area);
+      if (!area) valid = false;
+
+      $('sgIdeaGroup').querySelector('.err').classList.toggle('hidden', idea.length >= 10);
+      if (idea.length < 10) valid = false;
+
+      if (!valid) {
+        msg.className = 'p-4 rounded-xl text-xs sm:text-sm font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
+        msg.textContent = 'يرجى مراجعة الحقول الإلزامية وتصحيحها.';
+        return;
+      }
+
+      msg.className = 'p-4 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+      msg.textContent = 'تم التحقق من اقتراحك بنجاح! شكرًا لمساهمتك القيمة لحيك (يحتاج ربطًا بخدمة Google Apps Script لتخزين البيانات).';
+      sgForm.reset();
+    });
+  }
+
+  // Contact Form
+  const ctForm = $('contactForm');
+  if (ctForm) {
+    ctForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = $('ctName').value.trim();
+      const email = $('ctEmail').value.trim();
+      const message = $('ctMsg').value.trim();
+      const out = $('ctMsgOut');
+      const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+      let valid = true;
+      $('ctNameGroup').querySelector('.err').classList.toggle('hidden', !!name);
+      if (!name) valid = false;
+
+      $('ctEmailGroup').querySelector('.err').classList.toggle('hidden', emailValid);
+      if (!emailValid) valid = false;
+
+      $('ctMsgGroup').querySelector('.err').classList.toggle('hidden', message.length >= 10);
+      if (message.length < 10) valid = false;
+
+      if (!valid) {
+        out.className = 'p-4 rounded-xl text-xs sm:text-sm font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
+        out.textContent = 'يرجى تصحيح الأخطاء في النموذج.';
+        return;
+      }
+
+      out.className = 'p-4 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+      out.textContent = 'تم التحقق من الرسالة بنجاح. تنبيه: النموذج تجريبي ويحتاج خدمة إرسال بريدي للربط الفعلي.';
+      ctForm.reset();
+    });
+  }
+
+  // Poll
+  const voteBtn = $('voteBtn');
+  if (voteBtn) {
+    voteBtn.addEventListener('click', () => {
+      const checked = [...document.querySelectorAll('#poll input[type=checkbox]:checked')].map(i => i.value);
+      const msg = $('voteMsg');
+
+      if (!checked.length) {
+        msg.className = 'mt-4 text-center text-xs font-bold text-rose-600';
+        msg.textContent = 'يرجى اختيار أولوية واحدة على الأقل قبل التصويت.';
+        return;
+      }
+
+      msg.className = 'mt-4 text-center text-xs font-bold text-brand-700';
+      msg.textContent = 'شكرًا لمشاركتك! تم تسجيل اختيارك: ' + checked.join(' • ') + ' (تنبيه: يحتاج لقاعدة بيانات لحفظ التصويت).';
+    });
+  }
+}
+
+/* Counters Animation */
+function initCounters() {
+  const counters = $$('[data-count]');
+  counters.forEach(counter => {
+    if (counter.id === 'yearCount') return;
+    const target = +counter.getAttribute('data-count');
+    let current = 0;
+    const step = Math.ceil(target / 40);
+    const timer = setInterval(() => {
+      current += step;
+      if (current >= target) {
+        counter.textContent = counter.id === 'yearCount' ? String(target) : target + '+';
+        clearInterval(timer);
+      } else {
+        counter.textContent = current;
+      }
+    }, 30);
+  });
+}
+
+function applySiteText() {
+  $('heroTitleLine1').textContent = siteText.title1;
+  $('heroTitleLine2').textContent = siteText.title2;
+  $('heroTitleLine3').textContent = siteText.title3;
+  $('heroDescription').textContent = siteText.description;
+  $('visionText').textContent = siteText.vision;
+  $('missionText').textContent = siteText.mission;
+  document.title = `${siteText.title1} — منصة القائمة والبرنامج التنموي لبلدية الخنق`;
+}
+
+function renderNews() {
+  const host = $('newsList');
+  const empty = $('newsEmpty');
+  if (!host || !empty) return;
+  host.innerHTML = newsData.map(item => `
+    <article class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div class="flex items-center gap-2 text-xs font-bold text-brand-700 mb-3"><i class="fa-solid fa-calendar-day"></i><time>${escapeHTML(item.date)}</time></div>
+      <h2 class="text-lg font-black text-slate-900 mb-2">${escapeHTML(item.title)}</h2>
+      <p class="text-sm leading-relaxed text-slate-600 whitespace-pre-line">${escapeHTML(item.body)}</p>
+    </article>`).join('');
+  empty.classList.toggle('hidden', newsData.length > 0);
+}
+
+function refreshPublicContent() {
+  if (!$('heroTitleLine1')) return;
+  applySiteText();
+  setupFeaturedCandidateSlider();
+  renderYearOnePreviews();
+  setupProgramView();
+  renderProjectsByCategory();
+  renderNews();
+  const counts = {
+    axisCount: programData.length,
+    commitmentCount: programData.reduce((total, item) => total + item.points.length, 0),
+    candidateCount: candidateData.length
+  };
+  Object.entries(counts).forEach(([id, value]) => {
+    const node = $(id);
+    if (node) {
+      node.dataset.count = String(value);
+      node.textContent = String(value);
+    }
+  });
+}
+
+function setupDashboard() {
+  const textForm = $('siteTextForm');
+  const candidateForm = $('candidateForm');
+  const programForm = $('programForm');
+  const newsForm = $('newsForm');
+  const candidateHost = $('adminCandidates');
+  const candidatePreview = $('candidatePreview');
+  const newsHost = $('adminNews');
+  const programSelect = $('adminProgramSelect');
+  const phaseKeys = ['قريب — السنة 1', 'متوسط — السنتان 2–3', 'بعيد — السنتان 4–5'];
+  const settingsNav = $('adminSettingsNav');
+  const navLinks = [...settingsNav.querySelectorAll('.admin-nav-link')];
+  const settingPanels = [...document.querySelectorAll('[data-admin-panel], [data-admin-panels]')];
+  const updateSettingsNav = (scrollToPanel = false) => {
+    const target = location.hash || '#admin-overview';
+    const panelName = target.replace(/^#admin-/, '');
+    const isKnownPanel = navLinks.some(link => link.hash === target && !link.classList.contains('admin-public-link'));
+    const activePanel = isKnownPanel ? panelName : 'overview';
+    navLinks.forEach(link => {
+      if (link.hash === `#admin-${activePanel}`) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+    settingPanels.forEach(element => {
+      const panels = (element.dataset.adminPanels || element.dataset.adminPanel || '').split(/\s+/);
+      element.hidden = !panels.includes(activePanel);
+    });
+    if (scrollToPanel && isKnownPanel) {
+      const targetElement = document.getElementById(target.slice(1));
+      if (targetElement) targetElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  };
+  settingsNav.addEventListener('click', event => {
+    const link = event.target.closest('.admin-nav-link');
+    if (!link) return;
+    if (link.hash.startsWith('#admin-')) {
+      event.preventDefault();
+      if (location.hash !== link.hash) location.hash = link.hash;
+      updateSettingsNav(true);
+    }
+    document.body.classList.remove('admin-sidebar-open');
+    const toggle = $('adminSidebarToggle'); if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  });
+  const sidebarToggle = $('adminSidebarToggle');
+  if (sidebarToggle) sidebarToggle.addEventListener('click', () => {
+    const opened = document.body.classList.toggle('admin-sidebar-open');
+    sidebarToggle.setAttribute('aria-expanded', String(opened));
+  });
+  document.addEventListener('click', event => {
+    if (!document.body.classList.contains('admin-sidebar-open')) return;
+    if (event.target.closest('#adminSettingsNav, #adminSidebarToggle')) return;
+    document.body.classList.remove('admin-sidebar-open');
+    if (sidebarToggle) sidebarToggle.setAttribute('aria-expanded', 'false');
+  });
+  window.addEventListener('hashchange', () => updateSettingsNav(true));
+  updateSettingsNav();
+
+  const fillSiteForm = () => {
+    $('adminTitle1').value = siteText.title1;
+    $('adminTitle2').value = siteText.title2;
+    $('adminTitle3').value = siteText.title3;
+    $('adminHeroDescription').value = siteText.description;
+    $('adminVision').value = siteText.vision;
+    $('adminMission').value = siteText.mission;
+    $('adminCitizenDescription').value = siteText.citizenDescription;
+    $('adminContactDescription').value = siteText.contactDescription;
+    $('adminContactLinks').value = contactLinks.map(item => `${item.label} | ${item.url}`).join('\n');
+    Object.entries({
+      whatsapp: 'contactWhatsapp', facebook: 'contactFacebook', instagram: 'contactInstagram',
+      telegram: 'contactTelegram', email: 'contactEmail', website: 'contactWebsite'
+    }).forEach(([key, id]) => { $(id).value = contactChannels[key]; });
+  };
+  const imageFileToDataUrl = async file => {
+    if (!file.type.startsWith('image/')) throw new Error('نوع الملف المحدد ليس صورة.');
+    if (file.size > 8 * 1024 * 1024) throw new Error('حجم الصورة يتجاوز 8 ميغابايت.');
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1000 / bitmap.width, 1400 / bitmap.height);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext('2d');
+    if (!context) {
+      bitmap.close();
+      throw new Error('تعذر تجهيز الصورة في هذا المتصفح.');
+    }
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.76);
+    if (dataUrl.length > 1700000) throw new Error('تعذر ضغط الصورة إلى حجم مناسب. اختر صورة أصغر.');
+    return dataUrl;
+  };
+  const renderProgramCoverPreview = () => {
+    const preview = $('adminProgramCoverPreview');
+    const photo = safeImageUrl($('adminProgramPhotoData').value || $('adminProgramPhoto').value);
+    const title = $('adminProgramTitle').value.trim() || 'عنوان المحور';
+    preview.innerHTML = `${photo ? `<img src="${escapeHTML(photo)}" alt="" class="absolute inset-0 w-full h-full object-cover">` : ''}
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/20 to-transparent"></div>
+      <div class="absolute inset-x-0 bottom-0 p-4 text-white">
+        <span class="inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold backdrop-blur">معاينة بطاقة البرنامج</span>
+        <h4 class="mt-2 text-base font-black">${escapeHTML(title)}</h4>
+      </div>`;
+  };
+  const renderNewsCoverPreview = () => {
+    const preview = $('newsCoverPreview');
+    const photo = safeImageUrl($('newsPhotoData').value || $('newsPhoto').value);
+    const title = $('newsTitle').value.trim() || 'عنوان الخبر';
+    preview.innerHTML = `${photo ? `<img src="${escapeHTML(photo)}" alt="" class="absolute inset-0 w-full h-full object-cover">` : ''}
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/20 to-transparent"></div>
+      <div class="absolute inset-x-0 bottom-0 p-4 text-white">
+        <span class="inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold backdrop-blur">خبر جديد</span>
+        <h4 class="mt-2 text-base font-black">${escapeHTML(title)}</h4>
+      </div>`;
+  };
+  const renderCandidatePreview = candidate => {
+    const photo = safeImageUrl(candidate.photo);
+    const interests = candidate.interests.filter(Boolean);
+    candidatePreview.innerHTML = `
+      <article class="bg-gradient-to-b from-navy-800 to-navy-950 p-5 sm:p-6 rounded-3xl border border-slate-700 shadow-xl overflow-hidden text-white">
+        <div class="flex items-start gap-4 rounded-2xl bg-slate-900 border border-white/10 p-4 mb-4">
+          <div class="${photo ? 'w-24 aspect-[2/3]' : 'w-16 h-16'} rounded-2xl bg-gradient-to-tr from-brand-700 to-navy-800 flex items-center justify-center text-white border-2 border-brand-500/50 shrink-0 shadow-md overflow-hidden">
+            ${photo ? `<img src="${escapeHTML(photo)}" alt="صورة ${escapeHTML(candidate.name || 'المترشح')}" class="w-full h-full object-cover">` : '<i class="fa-solid fa-user-tie text-2xl text-emerald-300" aria-hidden="true"></i>'}
+          </div>
+          <div class="min-w-0"><span class="text-xs font-bold text-gold-400">${escapeHTML(candidate.role || 'صفة المترشح')}</span><h3 class="text-lg font-extrabold text-white break-words">${escapeHTML(candidate.name || 'اسم المترشح')}</h3></div>
+        </div>
+        <h4 class="text-xs font-bold text-slate-300 mb-2"><i class="fa-solid fa-id-card text-gold-400 ml-1" aria-hidden="true"></i> بطاقة تقنية</h4>
+        <dl class="grid grid-cols-2 gap-2 mb-4 text-xs">
+          <div class="rounded-xl bg-white/5 border border-white/5 p-2.5"><dt class="text-slate-400">الصفة</dt><dd class="text-white font-bold mt-1">${escapeHTML(candidate.role || 'عضو القائمة')}</dd></div>
+          <div class="rounded-xl bg-white/5 border border-white/5 p-2.5"><dt class="text-slate-400">مجال التركيز</dt><dd class="text-white font-bold mt-1">${escapeHTML(candidate.specialty || 'لم يُحدد بعد')}</dd></div>
+        </dl>
+        ${candidate.description ? `<p class="text-xs leading-relaxed text-slate-300 mb-3">${escapeHTML(candidate.description)}</p>` : ''}
+        ${interests.length ? `<div class="flex flex-wrap gap-1.5 mb-4" aria-label="مجالات الاهتمام">${interests.map(item => `<span class="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/10 text-slate-200">${escapeHTML(item)}</span>`).join('')}</div>` : ''}
+        <div class="mt-4 pt-3 border-t border-white/10 text-center text-xs font-bold text-gold-400">التعرف على كافة أعضاء القائمة <i class="fa-solid fa-arrow-left mr-1" aria-hidden="true"></i></div>
+      </article>`;
+  };
+  const renderCandidatePreviewFromForm = () => {
+    renderCandidatePreview({
+      name: $('candidateName').value.trim(),
+      role: $('candidateRole').value.trim(),
+      specialty: $('candidateSpecialty').value.trim(),
+      photo: $('candidatePhotoData').value || $('candidatePhoto').value.trim(),
+      description: $('candidateDescription').value.trim(),
+      interests: $('candidateInterests').value.split(/[،,]/).map(value => value.trim()).filter(Boolean)
+    });
+  };
+  const renderCandidateAdmin = () => {
+    candidateHost.innerHTML = candidateData.map((item, index) => `
+      <article class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4">
+        <div><h3 class="font-black text-slate-900">${escapeHTML(item.name)}</h3><p class="text-xs text-slate-500">${escapeHTML(item.role)} · ${escapeHTML(item.specialty)}</p></div>
+        <div class="flex gap-2"><button type="button" class="admin-secondary" data-candidate-edit="${index}">تعديل البطاقة</button><button type="button" class="admin-danger" data-candidate-delete="${index}">حذف</button></div>
+      </article>`).join('') || '<p class="text-sm text-slate-500">لا يوجد مترشحون في القائمة حاليًا.</p>';
+  };
+  const renderNewsAdmin = () => {
+    newsHost.innerHTML = newsData.map((item, index) => `
+      <article class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4">
+          <div class="flex items-center gap-3">${item.photo ? `<img src="${escapeHTML(item.photo)}" alt="" class="h-16 w-24 rounded-lg object-cover bg-slate-100">` : '<div class="h-16 w-24 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400"><i class="fa-solid fa-image"></i></div>'}<div><h3 class="font-black text-slate-900">${escapeHTML(item.title)}</h3><p class="text-xs text-slate-500">${escapeHTML(item.date)}</p></div></div>
+        <div class="flex gap-2"><button type="button" class="admin-secondary" data-news-edit="${index}">تعديل</button><button type="button" class="admin-danger" data-news-delete="${index}">حذف</button></div>
+      </article>`).join('') || '<p class="text-sm text-slate-500">لا توجد أخبار منشورة.</p>';
+  };
+  const renderProgramSelect = selected => {
+    programSelect.innerHTML = programData.map((item, index) => `<option value="${index}">${escapeHTML(item.title)}</option>`).join('');
+    if (!programData.length) {
+      programSelect.innerHTML = '<option value="">لا توجد محاور — أضف محورًا جديدًا</option>';
+      $('adminProgramTitle').value = '';
+      $('adminPhaseNear').value = '';
+      $('adminPhaseMid').value = '';
+      $('adminPhaseFar').value = '';
+      return;
+    }
+    programSelect.value = String(Math.min(selected, programData.length - 1));
+  };
+  const fillProgramForm = () => {
+    if (!programData.length || programSelect.value === '') {
+      $('adminProgramTitle').value = '';
+      $('adminProgramPhoto').value = '';
+      $('adminProgramPhotoData').value = '';
+      $('adminProgramPhotoFile').value = '';
+      $('adminPhaseNear').value = '';
+      $('adminPhaseMid').value = '';
+      $('adminPhaseFar').value = '';
+      renderProgramCoverPreview();
+      return;
+    }
+    const item = programData[+programSelect.value];
+    if (!item) return;
+    $('adminProgramTitle').value = item.title;
+    $('adminProgramPhoto').value = item.photo.startsWith('data:image/') ? '' : item.photo;
+    $('adminProgramPhotoData').value = item.photo.startsWith('data:image/') ? item.photo : '';
+    $('adminProgramPhotoFile').value = '';
+    $('adminPhaseNear').value = (item.phases[phaseKeys[0]] || []).join('\n');
+    $('adminPhaseMid').value = (item.phases[phaseKeys[1]] || []).join('\n');
+    $('adminPhaseFar').value = (item.phases[phaseKeys[2]] || []).join('\n');
+    renderProgramCoverPreview();
+  };
+  const closeCandidateForm = () => {
+    candidateForm.reset();
+    $('candidateIndex').value = '';
+    candidateForm.classList.add('hidden');
+    renderCandidatePreview(candidateData[0] || { name: '', role: '', specialty: '', photo: '', description: '', interests: [] });
+  };
+  const closeNewsForm = () => {
+    newsForm.reset();
+    $('newsIndex').value = '';
+    $('newsPhotoData').value = '';
+    newsForm.classList.add('hidden');
+    renderNewsCoverPreview();
+  };
+  fillSiteForm();
+  renderCandidateAdmin();
+  renderCandidatePreview(candidateData[0] || { name: '', role: '', specialty: '', photo: '', description: '', interests: [] });
+  renderProgramSelect(0);
+  fillProgramForm();
+  renderNewsAdmin();
+  updateAdminOverview();
+
+  const exportBtn = $('exportBackupBtn');
+  const quickBackupBtn = $('adminQuickBackup');
+  [exportBtn, quickBackupBtn].filter(Boolean).forEach(button => button.addEventListener('click', downloadDashboardBackup));
+  const quickPreview = $('adminQuickPreview');
+  if (quickPreview) quickPreview.addEventListener('click', () => window.open('intakhib021.html', '_blank', 'noopener'));
+  const importInput = $('importBackupFile');
+  if (importInput) importInput.addEventListener('change', async event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      const imported = JSON.parse(await file.text());
+      const valid = imported && imported.siteText && typeof imported.siteText === 'object' && Array.isArray(imported.candidates) && Array.isArray(imported.program) && Array.isArray(imported.news);
+      if (!valid) throw new Error('invalid-backup');
+      if (!window.confirm('سيتم استبدال البيانات الحالية بمحتوى النسخة الاحتياطية. هل تريد المتابعة؟')) { event.target.value = ''; return; }
+      if (window.nabnihaSupabase && !supabaseSession?.user) {
+        showDashboardStatus('سجّل الدخول إلى Supabase قبل استيراد نسخة احتياطية حتى لا تُستبدل محليًا فقط.', true);
+        event.target.value = '';
+        return;
+      }
+      const normalized = { siteText: imported.siteText, contactLinks: normalizeContactLinks(imported.contactLinks), contactChannels: normalizeContactChannels(imported.contactChannels), candidates: imported.candidates, program: imported.program, news: imported.news };
+      if (supabaseSession?.user && window.nabnihaSupabase) {
+        const { error } = await window.nabnihaSupabase.from('site_content').upsert({ id: 1, content: normalized }, { onConflict: 'id' });
+        if (error) throw error;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      showDashboardStatus('تم استيراد النسخة الاحتياطية. سيتم تحديث لوحة التحكم الآن.');
+      window.location.reload();
+    } catch (error) {
+      console.error('تعذر استيراد النسخة الاحتياطية.', error);
+      showDashboardStatus('تعذر استيراد الملف. تأكد أنه نسخة JSON صادرة من لوحة نبنيها معًا.', true);
+      event.target.value = '';
+    }
+  });
+
+  textForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const activePanel = location.hash.replace(/^#admin-/, '');
+    const requiredFields = $$(`#siteTextForm [data-admin-panel~="${activePanel}"] [required]`);
+    const invalidField = requiredFields.find(field => !field.value.trim());
+    if (invalidField) {
+      showDashboardStatus('يرجى ملء جميع الحقول المطلوبة في هذا القسم قبل الحفظ.', true);
+      invalidField.focus();
+      return;
+    }
+    if (activePanel === 'contact') {
+      const channelFields = {
+        whatsapp: 'contactWhatsapp', facebook: 'contactFacebook', instagram: 'contactInstagram',
+        telegram: 'contactTelegram', email: 'contactEmail', website: 'contactWebsite'
+      };
+      const parsedChannels = { ...defaultContactChannels };
+      for (const [key, id] of Object.entries(channelFields)) {
+        const value = $(id).value.trim();
+        if (!value) {
+          parsedChannels[key] = '';
+          continue;
+        }
+        let protocol = '';
+        try { protocol = new URL(value).protocol; } catch {}
+        const valid = key === 'email' ? ['mailto:', 'http:', 'https:'].includes(protocol) : ['http:', 'https:'].includes(protocol);
+        if (!valid) {
+          showDashboardStatus(`الرابط المدخل في حقل ${$(id).parentElement.firstChild.textContent.trim()} غير صالح.`, true);
+          $(id).focus();
+          return;
+        }
+        parsedChannels[key] = value;
+      }
+      const lines = $('adminContactLinks').value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      if (lines.length > 20) {
+        showDashboardStatus('يمكن إضافة 20 رابطًا كحد أقصى.', true);
+        $('adminContactLinks').focus();
+        return;
+      }
+      const parsedLinks = [];
+      for (const line of lines) {
+        const separator = line.indexOf('|');
+        const label = separator < 0 ? '' : line.slice(0, separator).trim();
+        const url = separator < 0 ? '' : line.slice(separator + 1).trim();
+        let validUrl = false;
+        try {
+          const parsed = new URL(url);
+          validUrl = ['http:', 'https:'].includes(parsed.protocol);
+        } catch {}
+        if (!label || label.length > 60 || !validUrl || url.length > 2048) {
+          showDashboardStatus('تحقق من الروابط: استخدم اسمًا ثم | ثم رابطًا يبدأ بـ https:// أو http://.', true);
+          $('adminContactLinks').focus();
+          return;
+        }
+        parsedLinks.push({ label, url });
+      }
+      contactLinks = parsedLinks;
+      contactChannels = parsedChannels;
+    }
+    siteText = {
+      title1: $('adminTitle1').value.trim(), title2: $('adminTitle2').value.trim(),
+      title3: $('adminTitle3').value.trim(), description: $('adminHeroDescription').value.trim(),
+      vision: $('adminVision').value.trim(), mission: $('adminMission').value.trim(),
+      citizenDescription: $('adminCitizenDescription').value.trim(),
+      contactDescription: $('adminContactDescription').value.trim()
+    };
+    refreshPublicContent();
+    saveDashboardState();
+  });
+
+  $('candidateNewBtn').addEventListener('click', () => {
+    candidateForm.reset();
+    $('candidateIndex').value = '';
+    $('candidateRole').value = 'عضو القائمة';
+    candidateForm.classList.remove('hidden');
+    renderCandidatePreviewFromForm();
+    $('candidateName').focus();
+  });
+  ['candidateName', 'candidateRole', 'candidateSpecialty', 'candidateDescription', 'candidateInterests']
+    .forEach(id => $(id).addEventListener('input', renderCandidatePreviewFromForm));
+  $('candidatePhoto').addEventListener('input', () => {
+    $('candidatePhotoData').value = '';
+    $('candidatePhotoFile').value = '';
+    renderCandidatePreviewFromForm();
+  });
+  $('candidatePhotoFile').addEventListener('change', async event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      $('candidatePhotoData').value = await imageFileToDataUrl(file);
+      $('candidatePhoto').value = '';
+      renderCandidatePreviewFromForm();
+      showDashboardStatus('تم تجهيز الصورة ومعاينتها. اضغط حفظ بيانات المترشح لحفظها.');
+    } catch (error) {
+      console.error('تعذر تجهيز صورة المترشح.', error);
+      event.target.value = '';
+      showDashboardStatus(error.message || 'تعذر تحميل الصورة المحددة.', true);
+    }
+  });
+  $('candidatePhotoClearBtn').addEventListener('click', () => {
+    $('candidatePhoto').value = '';
+    $('candidatePhotoData').value = '';
+    $('candidatePhotoFile').value = '';
+    renderCandidatePreviewFromForm();
+  });
+  $('candidateCancelBtn').addEventListener('click', closeCandidateForm);
+  candidateHost.addEventListener('click', event => {
+    const edit = event.target.closest('[data-candidate-edit]');
+    const remove = event.target.closest('[data-candidate-delete]');
+    if (edit) {
+      const index = +edit.dataset.candidateEdit;
+      const item = candidateData[index];
+      if (!item) return;
+      $('candidateIndex').value = String(index);
+      $('candidateName').value = item.name;
+      $('candidateRole').value = item.role;
+      $('candidateSpecialty').value = item.specialty;
+      $('candidatePhoto').value = item.photo.startsWith('data:image/') ? '' : item.photo;
+      $('candidatePhotoData').value = item.photo.startsWith('data:image/') ? item.photo : '';
+      $('candidatePhotoFile').value = '';
+      $('candidateDescription').value = item.description;
+      $('candidateInterests').value = item.interests.join('، ');
+      candidateForm.classList.remove('hidden');
+      renderCandidatePreviewFromForm();
+      $('candidateName').focus();
+    } else if (remove) {
+      const index = +remove.dataset.candidateDelete;
+      if (!candidateData[index] || !window.confirm(`هل تريد حذف المترشح ${candidateData[index].name}؟`)) return;
+      candidateData.splice(index, 1);
+      renderCandidateAdmin();
+      renderCandidatePreview(candidateData[0] || { name: '', role: '', specialty: '', photo: '', description: '', interests: [] });
+      refreshPublicContent();
+      saveDashboardState();
+    }
+  });
+  candidateForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const photoInput = $('candidatePhotoData').value || $('candidatePhoto').value.trim();
+    const photo = safeImageUrl(photoInput);
+    if (photoInput && !photo) {
+      showDashboardStatus('مسار الصورة غير صالح. استخدم مسار صورة محليًا أو رابط http/https.', true);
+      return;
+    }
+    const item = {
+      name: $('candidateName').value.trim(), role: $('candidateRole').value.trim(),
+      specialty: $('candidateSpecialty').value.trim(), photo,
+      description: $('candidateDescription').value.trim(),
+      interests: $('candidateInterests').value.split(/[،,]/).map(value => value.trim()).filter(Boolean)
+    };
+    const index = $('candidateIndex').value;
+    if (index === '') candidateData.push(item);
+    else candidateData[+index] = item;
+    closeCandidateForm();
+    renderCandidatePreview(candidateData[index === '' ? candidateData.length - 1 : +index]);
+    renderCandidateAdmin();
+    refreshPublicContent();
+    saveDashboardState();
+  });
+
+  $('programNewBtn').addEventListener('click', () => {
+    programData.push({
+      ico: 'fa-solid fa-layer-group', photo: 'hero.png', title: 'محور تنموي جديد',
+      phases: { [phaseKeys[0]]: [], [phaseKeys[1]]: [], [phaseKeys[2]]: [] }, points: []
+    });
+    renderProgramSelect(programData.length - 1);
+    fillProgramForm();
+    $('adminProgramTitle').focus();
+  });
+  programSelect.addEventListener('change', fillProgramForm);
+  $('adminProgramTitle').addEventListener('input', renderProgramCoverPreview);
+  $('adminProgramPhoto').addEventListener('input', () => {
+    $('adminProgramPhotoData').value = '';
+    $('adminProgramPhotoFile').value = '';
+    renderProgramCoverPreview();
+  });
+  $('adminProgramPhotoFile').addEventListener('change', async event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      $('adminProgramPhotoData').value = await imageFileToDataUrl(file);
+      $('adminProgramPhoto').value = '';
+      renderProgramCoverPreview();
+      showDashboardStatus('تم تجهيز غلاف البطاقة للمعاينة. احفظ المحور لتطبيقه.');
+    } catch (error) {
+      console.error('تعذر تجهيز غلاف بطاقة البرنامج.', error);
+      event.target.value = '';
+      showDashboardStatus(error.message || 'تعذر تحميل صورة الغلاف المحددة.', true);
+    }
+  });
+  $('adminProgramPhotoClear').addEventListener('click', () => {
+    $('adminProgramPhoto').value = '';
+    $('adminProgramPhotoData').value = '';
+    $('adminProgramPhotoFile').value = '';
+    renderProgramCoverPreview();
+  });
+  $('programDeleteBtn').addEventListener('click', () => {
+    if (!programData.length) return;
+    if (programData.length === 1) {
+      showDashboardStatus('يجب الإبقاء على محور واحد على الأقل في البرنامج.', true);
+      return;
+    }
+    const index = +programSelect.value;
+    if (!window.confirm(`هل تريد حذف المحور «${programData[index].title}»؟`)) return;
+    programData.splice(index, 1);
+    renderProgramSelect(Math.max(0, index - 1));
+    fillProgramForm();
+    refreshPublicContent();
+    saveDashboardState();
+  });
+  programForm.addEventListener('submit', event => {
+    event.preventDefault();
+    if (!$('adminProgramTitle').value.trim()) {
+      showDashboardStatus('يرجى إدخال عنوان المحور قبل الحفظ.', true);
+      $('adminProgramTitle').focus();
+      return;
+    }
+    const index = +programSelect.value;
+    const item = programData[index];
+    if (!item) {
+      showDashboardStatus('أضف محورًا قبل حفظ البرنامج.', true);
+      return;
+    }
+    const photoInput = $('adminProgramPhotoData').value || $('adminProgramPhoto').value.trim();
+    const photo = safeImageUrl(photoInput);
+    if (photoInput && !photo) {
+      showDashboardStatus('رابط غلاف البطاقة غير صالح. أدخل رابط صورة أو مسارًا محليًا صحيحًا.', true);
+      $('adminProgramPhoto').focus();
+      return;
+    }
+    item.title = $('adminProgramTitle').value.trim();
+    item.photo = photo;
+    item.phases = {
+      [phaseKeys[0]]: $('adminPhaseNear').value.split('\n').map(value => value.trim()).filter(Boolean),
+      [phaseKeys[1]]: $('adminPhaseMid').value.split('\n').map(value => value.trim()).filter(Boolean),
+      [phaseKeys[2]]: $('adminPhaseFar').value.split('\n').map(value => value.trim()).filter(Boolean)
+    };
+    item.points = Object.values(item.phases).flat();
+    renderProgramSelect(index);
+    refreshPublicContent();
+    saveDashboardState();
+  });
+
+  $('newsNewBtn').addEventListener('click', () => {
+    newsForm.reset();
+    $('newsIndex').value = '';
+    $('newsDate').value = new Date().toISOString().slice(0, 10);
+    $('newsPhotoData').value = '';
+    newsForm.classList.remove('hidden');
+    renderNewsCoverPreview();
+    $('newsTitle').focus();
+  });
+  $('newsTitle').addEventListener('input', renderNewsCoverPreview);
+  $('newsPhoto').addEventListener('input', () => {
+    $('newsPhotoData').value = '';
+    $('newsPhotoFile').value = '';
+    renderNewsCoverPreview();
+  });
+  $('newsPhotoFile').addEventListener('change', async event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      $('newsPhotoData').value = await imageFileToDataUrl(file);
+      $('newsPhoto').value = '';
+      renderNewsCoverPreview();
+      showDashboardStatus('تم تجهيز غلاف الخبر للمعاينة. احفظ الخبر لتطبيقه.');
+    } catch (error) {
+      console.error('تعذر تجهيز غلاف الخبر.', error);
+      event.target.value = '';
+      showDashboardStatus(error.message || 'تعذر تحميل صورة الغلاف المحددة.', true);
+    }
+  });
+  $('newsPhotoClear').addEventListener('click', () => {
+    $('newsPhoto').value = '';
+    $('newsPhotoData').value = '';
+    $('newsPhotoFile').value = '';
+    renderNewsCoverPreview();
+  });
+  $('newsCancelBtn').addEventListener('click', closeNewsForm);
+  newsHost.addEventListener('click', event => {
+    const edit = event.target.closest('[data-news-edit]');
+    const remove = event.target.closest('[data-news-delete]');
+    if (edit) {
+      const index = +edit.dataset.newsEdit;
+      const item = newsData[index];
+      if (!item) return;
+      $('newsIndex').value = String(index);
+      $('newsTitle').value = item.title;
+      $('newsDate').value = item.date;
+      $('newsBody').value = item.body;
+      $('newsPhoto').value = item.photo.startsWith('data:image/') ? '' : item.photo;
+      $('newsPhotoData').value = item.photo.startsWith('data:image/') ? item.photo : '';
+      $('newsPhotoFile').value = '';
+      newsForm.classList.remove('hidden');
+      renderNewsCoverPreview();
+      $('newsTitle').focus();
+    } else if (remove) {
+      const index = +remove.dataset.newsDelete;
+      if (!newsData[index] || !window.confirm(`هل تريد حذف الخبر «${newsData[index].title}»؟`)) return;
+      newsData.splice(index, 1);
+      renderNewsAdmin();
+      refreshPublicContent();
+      saveDashboardState();
+    }
+  });
+  newsForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const photoInput = $('newsPhotoData').value || $('newsPhoto').value.trim();
+    const photo = safeImageUrl(photoInput);
+    if (photoInput && !photo) {
+      showDashboardStatus('رابط غلاف الخبر غير صالح. أدخل رابط صورة أو مسارًا محليًا صحيحًا.', true);
+      $('newsPhoto').focus();
+      return;
+    }
+    const item = { title: $('newsTitle').value.trim(), date: $('newsDate').value, body: $('newsBody').value.trim(), photo };
+    const index = $('newsIndex').value;
+    if (index === '') newsData.unshift(item);
+    else newsData[+index] = item;
+    closeNewsForm();
+    renderNewsAdmin();
+    refreshPublicContent();
+    saveDashboardState();
+  });
+
+  const supabaseClient = window.nabnihaSupabase;
+  const supabaseAuthStatus = $('supabaseAuthStatus');
+  const supabaseSignOut = $('supabaseSignOut');
+  const supabasePublishLocal = $('supabasePublishLocal');
+  const setSupabaseAuthStatus = message => { supabaseAuthStatus.textContent = message; };
+  const refreshAdminFromRemote = content => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+    loadDashboardState();
+    fillSiteForm();
+    renderCandidateAdmin();
+    renderCandidatePreview(candidateData[0] || { name: '', role: '', specialty: '', photo: '', description: '', interests: [] });
+    renderProgramSelect(0);
+    fillProgramForm();
+    renderNewsAdmin();
+    updateAdminOverview();
+  };
+  const loadSupabaseContent = async () => {
+    if (!supabaseClient) return;
+    const { data, error } = await supabaseClient.from('site_content').select('content').eq('id', 1).maybeSingle();
+    if (error) throw error;
+    if (data && hasPublishedSupabaseContent(data.content)) refreshAdminFromRemote(data.content);
+    return Boolean(data && hasPublishedSupabaseContent(data.content));
+  };
+  const publishLocalContent = async () => {
+    const content = { siteText, contactLinks, contactChannels, candidates: candidateData, program: programData, news: newsData };
+    const { error } = await supabaseClient.from('site_content').upsert({ id: 1, content }, { onConflict: 'id' });
+    if (error) throw error;
+    showDashboardStatus('تم نشر المحتوى المحلي ومزامنته مع Supabase.');
+  };
+
+  if (!supabaseClient) {
+    setSupabaseAuthStatus('تعذر تهيئة Supabase. تحقق من ملف supabase-config.js واتصال الإنترنت.');
+  } else {
+    $('supabaseAuthForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const submit = event.currentTarget.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        const { error } = await supabaseClient.auth.signInWithPassword({
+          email: $('supabaseEmail').value.trim(),
+          password: $('supabasePassword').value
+        });
+        if (error) throw error;
+        $('supabasePassword').value = '';
+        setSupabaseAuthStatus('تم تسجيل الدخول؛ يجري تحميل المحتوى من قاعدة البيانات.');
+      } catch (error) {
+        console.error('تعذر تسجيل الدخول إلى Supabase.', error);
+        setSupabaseAuthStatus('تعذر تسجيل الدخول. تحقق من الحساب وكلمة المرور.');
+      } finally {
+        submit.disabled = false;
+      }
+    });
+    supabaseSignOut.addEventListener('click', async () => {
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) {
+        console.error('تعذر تسجيل الخروج من Supabase.', error);
+        setSupabaseAuthStatus('تعذر تسجيل الخروج من Supabase.');
+      }
+    });
+    supabasePublishLocal.addEventListener('click', async () => {
+      if (!supabaseSession?.user) return;
+      if (!window.confirm('سيتم استبدال محتوى Supabase بالمحتوى الموجود في هذا المتصفح. هل تريد المتابعة؟')) return;
+      try {
+        await publishLocalContent();
+      } catch (error) {
+        console.error('تعذر نشر المحتوى المحلي إلى Supabase.', error);
+        showDashboardStatus('تعذر النشر. تأكد من إضافة حسابك إلى جدول site_admins.', true);
+      }
+    });
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      setTimeout(() => {
+        supabaseSession = session;
+        const authenticated = Boolean(session?.user);
+        supabaseSignOut.classList.toggle('hidden', !authenticated);
+        supabasePublishLocal.classList.toggle('hidden', !authenticated);
+        setSupabaseAuthStatus(authenticated
+          ? `تم تسجيل الدخول: ${session.user.email}`
+          : 'متصل بقاعدة البيانات بوضع القراءة العامة. سجّل الدخول لإدارة المحتوى.');
+        if (authenticated) loadSupabaseContent().catch(error => {
+          console.error('تعذر تحميل المحتوى من Supabase بعد تسجيل الدخول.', error);
+          setSupabaseAuthStatus('تعذر تحميل المحتوى. تحقق من إعداد قاعدة البيانات.');
+        });
+      }, 0);
+    });
+    supabaseClient.auth.getSession().then(({ data, error }) => {
+      if (error) throw error;
+      supabaseSession = data.session;
+    }).catch(error => {
+      console.error('تعذر استعادة جلسة Supabase.', error);
+      setSupabaseAuthStatus('تعذر التحقق من جلسة Supabase.');
+    });
+    loadSupabaseContent().then(hasContent => {
+      if (!hasContent) setSupabaseAuthStatus('قاعدة البيانات جاهزة، لكن لم يُنشر فيها محتوى بعد.');
+    }).catch(error => {
+      console.error('تعذر تحميل المحتوى من Supabase.', error);
+      setSupabaseAuthStatus('تعذر الاتصال. شغّل supabase-setup.sql في SQL Editor وتحقق من الاتصال.');
+    });
+  }
+}
+
+/* Init */
+function init() {
+  loadDashboardState();
+  setupDashboard();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+})();
+</script>
+</body>
+</html>

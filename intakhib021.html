@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نبنيها معًا — منصة القائمة والبرنامج التنموي لبلدية الخنق</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Cairo', 'Tajawal', 'sans-serif'],
+          display: ['Tajawal', 'Cairo', 'sans-serif'],
+        },
+        colors: {
+          brand: {
+            50: '#f0fdf4',
+            100: '#dcfce7',
+            500: '#22c55e',
+            600: '#16a34a',
+            700: '#15803d',
+            800: '#166534',
+            900: '#14532d',
+          },
+          navy: {
+            800: '#111e38',
+            900: '#0b1528',
+            950: '#070d19',
+          },
+          gold: {
+            400: '#fbbf24',
+            500: '#f59e0b',
+            600: '#d97706',
+          }
+
+        }
+      }
+    }
+  }
+</script>
+<style>
+  :root {
+    --primary: #15803d;
+    --navy-dark: #0b1528;
+    --gold: #f59e0b;
+  }
+  body {
+    font-family: 'Cairo', sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    scroll-behavior: smooth;
+  }
+  .view-pane {
+    display: none;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .view-pane.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .glass-header {
+    background: rgba(11, 21, 40, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+  }
+  .hero-gradient {
+    background: linear-gradient(90deg, rgba(7, 13, 25, 0.88), rgba(7, 13, 25, 0.76)),
+                url('hero.png') center / cover no-repeat;
+  }
+  .pattern-grid {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+  .pcard-bg {
+    position: relative;
+    background-size: cover;
+    background-position: center;
+  }
+  .pcard-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(11,21,40,0.5) 0%, rgba(11,21,40,0.92) 100%);
+    border-radius: inherit;
+    transition: background 0.3s ease;
+  }
+  .pcard-bg:hover::before {
+    background: linear-gradient(180deg, rgba(21,128,61,0.65) 0%, rgba(11,21,40,0.95) 100%);
+  }
+  .candidate-slide[hidden] { display: none; }
+  @keyframes candidateCardIn {
+    from { opacity: 0; transform: translateX(14px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .candidate-slide.is-entering { animation: candidateCardIn 220ms ease-out both; }
+  .admin-field {
+    display: block;
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    color: #0f172a;
+    font: inherit;
+    font-size: 0.875rem;
+    outline: none;
+  }
+  .admin-field:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(34, 197, 94, .15); background: white; }
+  .admin-primary, .admin-secondary, .admin-danger {
+    border-radius: 0.75rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 800;
+    transition: background .2s ease;
+  }
+  .admin-primary { background: #15803d; color: white; }
+  .admin-primary:hover { background: #166534; }
+  .admin-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+  .admin-secondary:hover { background: #e2e8f0; }
+  .admin-danger { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+  .admin-danger:hover { background: #ffe4e6; }
+  @media (prefers-reduced-motion: reduce) {
+    .candidate-slide, .candidate-slider-controls button { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+<!-- Header & Navigation -->
+<header class="sticky top-0 z-50 glass-header border-b border-white/10 transition-all duration-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+    
+    <!-- Brand Logo -->
+    <a href="#home" data-route="home" class="flex items-center gap-3.5 group text-decoration-none">
+      <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-700 via-brand-600 to-gold-500 p-0.5 shadow-lg shadow-brand-900/40 group-hover:scale-105 transition duration-300">
+        <div class="w-full h-full bg-navy-900 rounded-[14px] flex items-center justify-center border border-white/10">
+          <span class="text-2xl font-black bg-gradient-to-br from-white via-slate-100 to-gold-400 bg-clip-text text-transparent">ن</span>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl font-black text-white tracking-tight group-hover:text-gold-400 transition">نبنيها معًا</h1>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-500/20 text-brand-400 border border-brand-500/30">2026</span>
+        </div>
+        <p class="text-xs font-medium text-slate-400">معًا نبني بلدية أفضل وأرقى</p>
+      </div>
+    </a>
+
+    <!-- Desktop Navigation Links -->
+    <nav class="hidden lg:flex items-center gap-1 bg-white/5 p-1.5 rounded-2xl border border-white/10 shadow-inner" id="desktopNav">
+      <a href="#home" data-route="home" class="nav-item px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition duration-200">الرئيسية</a>
+      <a href="#about" data-route="about" class="nav-item px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition duration-200">من نحن</a>
+      <a href="#candidate" data-route="candidate" class="nav-item px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition duration-200">المترشحون</a>
+      <a href="#program" data-route="program" class="nav-item px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition duration-200">البرنامج التنموي</a>
+      <a href="#projects" data-route="projects" class="nav-item px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition duration-200">المشاريع والأولويات</a>
+      <a href="#citizen" data-route="citizen" class="nav-item px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition duration-200">فضاء المواطن</a>
+      <a href="#news" data-route="news" class="nav-item px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition duration-200">الأخبار</a>
+      <a href="#contact" data-route="contact" class="nav-item px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition duration-200">اتصل بنا</a>
+    </nav>
+
+    <!-- Header Actions -->
+    <div class="flex items-center gap-3">
+      <a href="#citizen" data-route="citizen" class="relative group overflow-hidden bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-navy-950 font-bold text-sm px-5 py-2.5 rounded-xl shadow-lg shadow-gold-500/20 hover:shadow-gold-500/30 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+        <i class="fa-solid fa-lightbulb text-navy-900 group-hover:rotate-12 transition"></i>
+        <span>شارك باقتراح</span>
+      </a>
+
+      <!-- Mobile Menu Toggle -->
+      <button id="mobileMenuBtn" class="lg:hidden w-11 h-11 rounded-xl bg-white/10 border border-white/10 text-white flex items-center justify-center hover:bg-white/15 transition">
+        <i class="fa-solid fa-bars text-lg" id="menuIcon"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Dropdown Navigation -->
+  <div id="mobileDropdown" class="hidden lg:hidden bg-navy-900/95 border-b border-white/10 px-4 py-4 space-y-1">
+    <a href="#home" data-route="home" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">الرئيسية</a>
+    <a href="#about" data-route="about" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">من نحن</a>
+    <a href="#candidate" data-route="candidate" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">عن المترشح</a>
+    <a href="#program" data-route="program" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">البرنامج</a>
+    <a href="#projects" data-route="projects" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">المشاريع</a>
+    <a href="#citizen" data-route="citizen" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">فضاء المواطن</a>
+    <a href="#news" data-route="news" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">الأخبار</a>
+    <a href="#contact" data-route="contact" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">اتصل بنا</a>
+    <a href="dashboard.html" class="block px-4 py-2.5 rounded-xl text-sm font-bold text-gold-300 hover:bg-white/10"><i class="fa-solid fa-sliders ml-2"></i>لوحة التحكم</a>
+  </div>
+</header>
+
+<!-- Main SPA Content Wrapper -->
+<main id="app" class="flex-1">
+
+  <!-- ==========================================
+       VIEW 1: الرئيسية (HOME)
+       ========================================== -->
+  <section id="view-home" class="view-pane active">
+    <!-- Hero Section -->
+    <div class="relative hero-gradient text-white overflow-hidden pt-8 pb-12 lg:pt-12 lg:pb-16 border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          
+          <!-- Content Left (RTL Right) -->
+          <div class="lg:col-span-7 space-y-6 text-center lg:text-right">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
+              <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+              <span class="text-xs font-bold text-gold-400">معًا ننجز — من أجل بلدية أفضل</span>
+              <span class="text-white/40">•</span>
+              <span class="text-xs text-slate-300 font-medium">بلدية الخنق</span>
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-white leading-[2]">
+  <span class="block mb-3" id="heroTitleLine1">برنامج واقعي...</span>
+    <span class="block mb-3 bg-gradient-to-l from-emerald-400 to-brand-500 bg-clip-text text-transparent" id="heroTitleLine2">
+    التزام أخلاقي...
+  </span>
+    <span class="block" id="heroTitleLine3">والإنجاز عهد نلتزم به</span>
+</h1>
+
+              <p id="heroDescription" class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+              البرنامج الانتخابي لبلدية الخنق 2026–2031؛ تشخيص للواقع، وترتيب للأولويات، والتزامات تتدرج من صلاحيات البلدية إلى الشراكة والترافع.
+            </p>
+
+            <!-- Call to Actions -->
+            <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+              <a href="#program" data-route="program" class="px-7 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-xl shadow-brand-900/40 hover:shadow-brand-600/30 transition transform hover:-translate-y-0.5 flex items-center gap-2.5">
+                <i class="fa-solid fa-clipboard-list text-emerald-200"></i>
+                <span>استكشف البرنامج التنموي</span>
+              </a>
+              <a href="#citizen" data-route="citizen" class="px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 backdrop-blur-md hover:border-white/30 transition flex items-center gap-2.5">
+                <i class="fa-solid fa-check-to-slot text-gold-400"></i>
+                <span>صوّت وشارك برأيك</span>
+              </a>
+            </div>
+
+            <!-- Highlights Checklist -->
+            <div class="pt-6 border-t border-white/10 grid grid-cols-3 gap-4 text-center lg:text-right">
+              <div class="flex items-center gap-2 justify-center lg:justify-start text-xs sm:text-sm text-slate-300">
+                <i class="fa-solid fa-circle-check text-brand-500"></i>
+                <span>شفافية كاملة</span>
+              </div>
+              <div class="flex items-center gap-2 justify-center lg:justify-start text-xs sm:text-sm text-slate-300">
+                <i class="fa-solid fa-circle-check text-brand-500"></i>
+                <span>مشاركة مواطنة</span>
+              </div>
+              <div class="flex items-center gap-2 justify-center lg:justify-start text-xs sm:text-sm text-slate-300">
+                <i class="fa-solid fa-circle-check text-brand-500"></i>
+                <span>كفاءات شابة</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Image & Visual Card Right -->
+          <div class="lg:col-span-5 flex justify-center relative">
+            <div class="relative w-full max-w-md">
+              <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-brand-600 to-gold-500 opacity-15 blur-xl"></div>
+              
+              <div class="relative">
+                <!-- Full technical candidate cards carousel -->
+                <div id="featuredCandidateSlider" role="region" aria-roledescription="عارض شرائح" aria-label="بطاقات أعضاء القائمة الانتخابية" tabindex="0">
+                  <div id="featuredCandidateSlides" aria-live="off"></div>
+                </div>
+
+                <div class="candidate-slider-controls flex items-center justify-between gap-3 mt-3" aria-label="أدوات التنقل بين المترشحين">
+                  <button type="button" id="candidatePrev" class="w-9 h-9 rounded-full border border-white/15 bg-white/5 text-white hover:bg-white/10 transition" aria-label="المترشح السابق"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+                  <label for="candidateSlideSelect" class="sr-only">اختر مترشحًا</label>
+                  <select id="candidateSlideSelect" class="max-w-[145px] bg-slate-900 border border-white/15 rounded-lg px-2 py-1 text-[11px] text-white" aria-label="اختيار المترشح"></select>
+                  <span class="text-[11px] text-slate-400 min-w-10 text-center" id="candidateSlideCount">1 / 3</span>
+                  <button type="button" id="candidateNext" class="w-9 h-9 rounded-full border border-white/15 bg-white/5 text-white hover:bg-white/10 transition" aria-label="المترشح التالي"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20">
+      <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-6 md:p-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 divide-y md:divide-y-0 md:divide-x md:divide-x-reverse divide-slate-100">
+          
+          <div class="text-center pt-3 md:pt-0">
+            <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-3 text-xl">
+              <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div id="axisCount" class="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight" data-count="7">7</div>
+            <p class="text-xs sm:text-sm font-bold text-slate-500 mt-1">محاور تنمويًا </p>
+          </div>
+
+          <div class="text-center pt-3 md:pt-0">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3 text-xl">
+              <i class="fa-solid fa-list-check"></i>
+            </div>
+            <div id="commitmentCount" class="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight" data-count="30">30</div>
+            <p class="text-xs sm:text-sm font-bold text-slate-500 mt-1">التزامًا قابلا للقياس و المتابعة</p>
+          </div>
+
+          <div class="text-center pt-3 md:pt-0">
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3 text-xl">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <div id="candidateCount" class="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight" data-count="26">26</div>
+            <p class="text-xs sm:text-sm font-bold text-slate-500 mt-1">مترشحًا  </p>
+          </div>
+
+          <div class="text-center pt-3 md:pt-0">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-xl">
+              <i class="fa-solid fa-map-location-dot"></i>
+            </div>
+            <div id="yearCount" class="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight" data-count="5">5</div>
+            <p class="text-xs sm:text-sm font-bold text-slate-500 mt-1">سنوات من العمل 2026-2031</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Vision & Mission Overview -->
+    <div class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto mb-14">
+        <span class="text-xs font-extrabold uppercase tracking-widest text-brand-600 bg-brand-50 px-3 py-1 rounded-full border border-brand-200">الأسس والمبادئ</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-3">هويتنا <span class="text-brand-600">ورسالتنا للمواطن</span></h2>
+        <p class="text-slate-600 text-sm sm:text-base mt-2">برنامج واقعي للفترة 2026–2031، يقوم على تشخيص الواقع وترتيب الأولويات.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Vision -->
+        <div class="group bg-white rounded-3xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-2 h-full bg-brand-600"></div>
+          <div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition duration-300">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
+          <h3 class="text-xl font-black text-slate-900 mb-3">رؤيتنا</h3>
+            <p id="visionText" class="text-slate-600 leading-relaxed text-sm sm:text-base">
+            برنامج واقعي... التزام أخلاقي... والإنجاز عهد نلتزم به.
+          </p>
+        </div>
+
+        <!-- Mission -->
+        <div class="group bg-white rounded-3xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-2 h-full bg-gold-500"></div>
+          <div class="w-14 h-14 rounded-2xl bg-amber-50 text-gold-600 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition duration-300">
+            <i class="fa-solid fa-handshake-angle"></i>
+          </div>
+          <h3 class="text-xl font-black text-slate-900 mb-3">رسالتنا</h3>
+          <p id="missionText" class="text-slate-600 leading-relaxed text-sm sm:text-base">
+            «معًا ننجز — من أجل بلدية أفضل». الموقع: بلدية الخنق، دائرة عين ماضي، ولاية الأغواط.
+          </p>
+        </div>
+      </div>
+
+      <div class="text-center mt-10">
+        <a href="#about" data-route="about" class="inline-flex items-center gap-2 text-sm font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 px-6 py-3 rounded-xl border border-brand-200 transition">
+          <span>تعرّف أكثر على هويتنا ومبادئنا</span>
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Year 1 Urgent Priorities -->
+    <div class="bg-slate-100/70 py-20 border-y border-slate-200/60">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-2xl mx-auto mb-14">
+          <span class="text-xs font-extrabold uppercase tracking-widest text-brand-600 bg-white px-3 py-1 rounded-full border border-slate-200">خارطة العمل المستعجلة</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-3">أبرز أولويات <span class="text-brand-600">السنة الأولى</span></h2>
+          <p class="text-slate-600 text-sm mt-2">نماذج من التزامات السنة الأولى في المحاور السبعة.</p>
+        </div>
+
+        <div id="homeYearOnePreview" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Populated from the campaign program data. -->
+        </div>
+
+        <div class="text-center mt-10">
+          <a href="#projects" data-route="projects" class="inline-flex items-center gap-2 text-sm font-bold text-slate-800 bg-white hover:bg-slate-50 px-6 py-3 rounded-xl border border-slate-200 shadow-sm transition">
+            <span>استعراض كافة المشاريع حسب المجالات</span>
+            <i class="fa-solid fa-arrow-left"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Program Highlights -->
+    <div class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+        <div>
+          <span class="text-xs font-extrabold uppercase tracking-widest text-brand-600 bg-brand-50 px-3 py-1 rounded-full border border-brand-200">المحاور التنموية</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">معاينة <span class="text-brand-600">برنامج القائمة</span></h2>
+          <p class="text-slate-600 text-sm mt-1">سبعة محاور مفصلة على ثلاثة آفاق زمنية — اضغط على أي بطاقة لعرض الالتزامات.</p>
+        </div>
+        <a href="#program" data-route="program" class="inline-flex items-center gap-2 text-sm font-bold text-brand-700 hover:text-brand-800 transition">
+          <span>عرض المحاور السبعة</span>
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="homeProgramPreview">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </div>
+
+    <!-- Citizen Participation Banner -->
+    <div class="pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="relative rounded-3xl overflow-hidden bg-gradient-to-r from-navy-950 via-navy-900 to-brand-900 text-white p-8 sm:p-12 border border-white/10 shadow-2xl">
+        <div class="relative z-10 max-w-2xl">
+          <span class="inline-flex items-center gap-2 bg-gold-500/20 text-gold-400 border border-gold-500/30 text-xs px-3 py-1 rounded-full font-bold mb-4">
+            <i class="fa-solid fa-comments"></i> فضاء تفاعلي للمواطن
+          </span>
+          <h2 class="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+            منصة تشاركية حقيقية... <br>
+            <span class="text-gold-400">صوتك واقتراحك يصنع القرار</span>
+          </h2>
+          <p class="text-slate-300 text-sm sm:text-base mt-3 leading-relaxed">
+            البلدية ملك لكل مواطن ومواطنة. شاركنا فكرتك أو مشروعك المقترح لحيك، وصوت على الأولويات الأكثر إلحاحًا لنضعها في مقدمة خطتنا.
+          </p>
+          <div class="flex flex-wrap gap-4 mt-8">
+            <a href="#citizen" data-route="citizen" class="px-6 py-3.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-navy-950 font-black text-sm shadow-lg shadow-gold-500/20 transition flex items-center gap-2">
+              <i class="fa-solid fa-plus"></i>
+              <span>اقترح مشروعًا لحيّك</span>
+            </a>
+            <a href="#citizen" data-route="citizen" class="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/20 backdrop-blur-md transition flex items-center gap-2">
+              <i class="fa-solid fa-check-to-slot text-gold-400"></i>
+              <span>صوّت لأولوياتك</span>
+            </a>
+          </div>
+        </div>
+        <!-- Decorative abstract pattern -->
+        <div class="absolute -left-12 -bottom-12 w-80 h-80 rounded-full bg-brand-500/10 blur-3xl pointer-events-none"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ==========================================
+       VIEW 2: من نحن (ABOUT)
+       ========================================== -->
+  <section id="view-about" class="view-pane">
+    <div class="bg-slate-900 text-white py-16 pattern-grid border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">التعريف والهوية</span>
+        <h1 class="text-3xl sm:text-4xl font-black mt-3">من <span class="text-brand-500">نحن</span></h1>
+        <p class="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mt-2">قائمة شبابية تجمع بين روح التجديد والكفاءة العلمية والخبرة الميدانية لخدمة بلدية الخنق.</p>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
+      
+      <!-- Project Definition Box -->
+      <div class="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200/80 shadow-sm">
+        <div class="max-w-3xl mx-auto text-center space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-2xl mx-auto">
+            <i class="fa-solid fa-circle-info"></i>
+          </div>
+          <h2 class="text-2xl font-black text-slate-900">البرنامج الانتخابي لبلدية الخنق (2026–2031)</h2>
+          <p class="text-slate-600 text-base leading-relaxed">
+            الشعار: «معًا ننجز — من أجل بلدية أفضل». الموقع: بلدية الخنق، دائرة عين ماضي، ولاية الأغواط. يقوم البرنامج على تشخيص الواقع وترتيب الأولويات، وتوزيع الالتزامات على مراحل قريبة ومتوسطة وبعيدة، ضمن صلاحيات البلدية المباشرة أو عبر الشراكة والتنسيق أو الترافع الإستراتيجي.
+          </p>
+        </div>
+      </div>
+
+      <!-- Core Values / Principles -->
+      <div>
+        <div class="text-center max-w-2xl mx-auto mb-12">
+          <h3 class="text-2xl font-black text-slate-900">مبادئنا <span class="text-brand-600">الأساسية الراسخة</span></h3>
+          <p class="text-slate-500 text-sm mt-1">القيم التي تحكم كل قرار ومقترح نتخذه في خدمة الصالح العام.</p>
+        </div>
+
+        <div id="valuesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="bg-white p-7 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition text-center">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-gold-600 flex items-center justify-center mx-auto mb-4 text-xl">
+              <i class="fa-solid fa-eye"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 text-base mb-2">الشفافية</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">نشر الميزانية والصفقات والقرارات البلدية بكل وضوح أمام جميع المواطنين.</p>
+          </div>
+
+          <div class="bg-white p-7 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition text-center">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4 text-xl">
+              <i class="fa-solid fa-handshake"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 text-base mb-2">الشراكة</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">المواطن والمجتمع المدني شركاء حقيقيون في التخطيط والتنفيذ والمتابعة.</p>
+          </div>
+
+          <div class="bg-white p-7 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition text-center">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-brand-600 flex items-center justify-center mx-auto mb-4 text-xl">
+              <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 text-base mb-2">العدالة المجالية</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">توزيع المشاريع والخدمات الأساسية بتوازن تام بين المركز وكافة الأحياء والقرى.</p>
+          </div>
+
+          <div class="bg-white p-7 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition text-center">
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-4 text-xl">
+              <i class="fa-solid fa-seedling"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 text-base mb-2">الاستدامة</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">تخطيط تنموي يحافظ على الموارد الطبيعية والبيئية ويخدم أجيال الحاضر والمستقبل.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ==========================================
+       VIEW 3: عن المترشح (CANDIDATE)
+       ========================================== -->
+  <section id="view-candidate" class="view-pane">
+    <div class="bg-slate-900 text-white py-16 pattern-grid border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">الفريق الانتخابي</span>
+        <h1 class="text-3xl sm:text-4xl font-black mt-3">المترشحون <span class="text-brand-500">في القائمة</span></h1>
+        <p class="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mt-2">بطاقات تعريفية بأعضاء القائمة مع إبراز مجالات التركيز والأولويات لخدمة البلدة.</p>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
+      
+      <!-- Candidate directory is filled from the official list. -->
+      <div id="candidateDirectory" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" aria-live="polite"></div>
+
+      <!-- Verified Initiatives / Commitments Note -->
+      <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-6 flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg flex-shrink-0">
+          <i class="fa-solid fa-circle-info"></i>
+        </div>
+        <div>
+          <h4 class="font-bold text-amber-900 text-sm">ملاحظة بخصوص الإنجازات والمبادرات</h4>
+          <p class="text-xs sm:text-sm text-amber-800 mt-1 leading-relaxed">
+            نعرض الإنجازات الفعلية الموثقة فقط، بعيدًا عن الوعود أو البيانات غير المؤكدة. لم تتوفر بعد تفاصيل موثقة عن إنجازات أو مبادرات شخصية لأعضاء القائمة، وستُضاف هنا فور تزويدنا بها من اللجان المختصة.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ==========================================
+       VIEW 4: البرنامج الانتخابي (PROGRAM)
+       ========================================== -->
+  <section id="view-program" class="view-pane">
+    <div class="bg-slate-900 text-white py-16 pattern-grid border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">التزامات القائمة</span>
+        <h1 class="text-3xl sm:text-4xl font-black mt-3">البرنامج <span class="text-brand-500">الانتخابي الشامل</span></h1>
+        <p class="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mt-2">المحاور السبعة المفصلة في الوثيقة، موزعة على مراحل التنفيذ القريب والمتوسط والبعيد.</p>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-8">
+      
+      <!-- Search & Category Filters -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div class="relative w-full md:w-96">
+          <i class="fa-solid fa-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="search" id="programSearch" placeholder="ابحث في محاور البرنامج والالتزامات..." class="w-full pr-11 pl-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+        </div>
+
+        <div class="w-full md:w-64">
+          <select id="programFilter" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            <option value="">جميع المحاور (7)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Main Program Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="programGrid">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-6" aria-label="منهج تنفيذ البرنامج">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <h2 class="text-lg font-black text-slate-900 mb-4"><i class="fa-solid fa-calendar-check text-brand-600 ml-2" aria-hidden="true"></i>آفاق التنفيذ</h2>
+          <div class="space-y-3 text-sm">
+            <div class="p-3 rounded-xl bg-brand-50"><strong class="text-brand-800">قريب — السنة الأولى:</strong> التشخيص والمعالجات والخدمات ذات الأولوية.</div>
+            <div class="p-3 rounded-xl bg-blue-50"><strong class="text-blue-800">متوسط — السنتان الثانية والثالثة:</strong> توسيع المشاريع والخدمات والشراكات.</div>
+            <div class="p-3 rounded-xl bg-amber-50"><strong class="text-amber-800">بعيد — السنتان الرابعة والخامسة:</strong> المشاريع الهيكلية والاستدامة والتقييم الختامي.</div>
+          </div>
+          <h3 class="text-sm font-black text-slate-800 mt-5 mb-2">أصناف الالتزامات</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">صلاحيات البلدية المباشرة</span>
+            <span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">الشراكة والتنسيق</span>
+            <span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">الترافع الإستراتيجي</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-3">يُحدّد صنف كل التزام عند إعداد بطاقة تنفيذه التفصيلية.</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <h2 class="text-lg font-black text-slate-900 mb-4"><i class="fa-solid fa-chart-line text-gold-600 ml-2" aria-hidden="true"></i>مؤشرات النجاح العامة</h2>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+            <li class="p-2 rounded-lg bg-slate-50">تحسن حالة الطرق والإنارة</li>
+            <li class="p-2 rounded-lg bg-slate-50">انخفاض النقاط السوداء والمفارغ العشوائية</li>
+            <li class="p-2 rounded-lg bg-slate-50">زيادة المساحات الخضراء</li>
+            <li class="p-2 rounded-lg bg-slate-50">تحسن الإطعام المدرسي</li>
+            <li class="p-2 rounded-lg bg-slate-50">المبادرات المرافقة والمشاريع المستقطبة</li>
+            <li class="p-2 rounded-lg bg-slate-50">الخدمات المرقمنة ومدة معالجة الملفات</li>
+            <li class="p-2 rounded-lg bg-slate-50">نسبة رضا المواطنين</li>
+            <li class="p-2 rounded-lg bg-slate-50">التقارير الدورية المنشورة</li>
+            <li class="p-2 rounded-lg bg-slate-50">نسبة تنفيذ الالتزامات المعلنة</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+          <div><h2 class="text-lg font-black text-slate-900">وثيقة الالتزامات العامة</h2><p class="text-xs text-slate-500 mt-1">30 التزامًا تضبط طريقة العمل والمساءلة.</p></div>
+          <span class="text-xs font-black text-brand-700 bg-brand-50 px-3 py-1 rounded-full">30 التزامًا</span>
+        </div>
+        <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs text-slate-700">
+          <li class="p-3 rounded-xl bg-slate-50">لا وعد إلا بما يدخل في صلاحيات البلدية أو يمكن الترافع من أجله.</li>
+          <li class="p-3 rounded-xl bg-slate-50">المواطن شريك لا ناخب فحسب.</li>
+          <li class="p-3 rounded-xl bg-slate-50">نشر حصيلة الإنجازات كل ستة أشهر.</li>
+          <li class="p-3 rounded-xl bg-slate-50">المساواة بين الأحياء.</li>
+          <li class="p-3 rounded-xl bg-slate-50">ترشيد المال العام.</li>
+          <li class="p-3 rounded-xl bg-slate-50">الرد على الشكاوى في آجال معقولة.</li>
+          <li class="p-3 rounded-xl bg-slate-50">احترام القانون.</li>
+          <li class="p-3 rounded-xl bg-slate-50">وضع المصلحة العامة فوق كل اعتبار.</li>
+          <li class="p-3 rounded-xl bg-slate-50">الاعتزاز بالنقد البناء.</li>
+          <li class="p-3 rounded-xl bg-slate-50">ثبات الشعار طوال العهدة.</li>
+        </ul>
+        <p class="text-[11px] text-slate-500 mt-3">المعروض هنا أبرز الالتزامات الواردة في الملخص؛ تُستكمل الوثيقة التفصيلية عند توفر نص الالتزامات الثلاثين كاملًا.</p>
+      </section>
+
+      <!-- Empty State -->
+      <div id="programEmpty" class="hidden text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300">
+        <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-2xl mb-4">
+          <i class="fa-solid fa-folder-open"></i>
+        </div>
+        <h4 class="font-bold text-slate-800 text-base">لا توجد محاور مطابقة للبحث</h4>
+        <p class="text-xs text-slate-500 mt-1">جرّب البحث بكلمات أخرى أو اختر "جميع المحاور"</p>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ==========================================
+       VIEW 5: المشاريع والأولويات (PROJECTS)
+       ========================================== -->
+  <section id="view-projects" class="view-pane">
+    <div class="bg-slate-900 text-white py-16 pattern-grid border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">التنفيذ الميداني</span>
+        <h1 class="text-3xl sm:text-4xl font-black mt-3">المشاريع <span class="text-brand-500">والأولويات</span></h1>
+        <p class="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mt-2">التزامات السنة الأولى ومحاور البرنامج حسب المجالات الحيوية.</p>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
+      
+      <!-- Year 1 commitments by axis -->
+      <div>
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-3 h-8 bg-brand-600 rounded-full"></div>
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900">التزامات الآفاق الزمنية</h2>
+            <p class="text-xs sm:text-sm text-slate-500">تُعرض التزامات السنة الأولى حسب محاور البرنامج</p>
+          </div>
+        </div>
+
+        <div id="projectsYearOneGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Populated from the campaign program data. -->
+        </div>
+      </div>
+
+      <!-- Categorized Project Structure -->
+      <div>
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-3 h-8 bg-gold-500 rounded-full"></div>
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900">تنظيم المشاريع حسب المجالات</h2>
+            <p class="text-xs sm:text-sm text-slate-500">هيكلة المشاريع والالتزامات وفق المحاور السبعة</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="projectsByCategory">
+          <!-- Injected via JavaScript -->
+        </div>
+
+        <!-- Reliability Notice -->
+        <div class="mt-8 bg-blue-50/70 border border-blue-200 rounded-2xl p-6 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg flex-shrink-0">
+            <i class="fa-solid fa-shield-check"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-blue-900 text-sm">مبدأ الشفافية في عرض المشاريع</h4>
+            <p class="text-xs sm:text-sm text-blue-800 mt-1 leading-relaxed">
+              هذه المساحة مهيأة لإدراج المشاريع ومواقعها وحالات تقدمها بعد توفر البيانات الرسمية الفعلية. التزامًا منا بالصدق مع المواطن، لا تُعرض أي نسبة إنجاز أو وضعية مشروع دون مصادقة رسمية وبيانات حقيقية موثقة.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ==========================================
+       VIEW 6: فضاء المواطن (CITIZEN)
+       ========================================== -->
+  <section id="view-citizen" class="view-pane">
+    <div class="bg-slate-900 text-white py-16 pattern-grid border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">الديمقراطية التشاركية</span>
+        <h1 class="text-3xl sm:text-4xl font-black mt-3">فضاء <span class="text-brand-500">المواطن</span></h1>
+        <p id="citizenDescription" class="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mt-2">صوتك أساس برنامجنا — اقترح مشروعًا لحيك وصوّت للأولويات التي تهم أسرتك.</p>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+        
+        <!-- Suggestion Form (7 Cols) -->
+        <div class="lg:col-span-7 bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm">
+          <div class="flex items-center gap-3 pb-6 border-b border-slate-100 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-lightbulb"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-black text-slate-900">اقترح مشروعًا لحيّك</h2>
+              <p class="text-xs text-slate-500">تُجمع الاقتراحات وتُدرس من طرف اللجنة التقنية للقائمة</p>
+            </div>
+          </div>
+
+          <form id="suggestForm" class="space-y-5" novalidate>
+            <div id="sgNameGroup">
+              <label for="sgName" class="block text-xs font-bold text-slate-700 mb-1.5">الاسم الكامل *</label>
+              <input type="text" id="sgName" name="name" placeholder="أدخل اسمك الكامل" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+              <span class="err text-xs text-rose-600 hidden mt-1">الرجاء إدخال الاسم (3 أحرف على الأقل).</span>
+            </div>
+
+            <div id="sgAreaGroup">
+              <label for="sgArea" class="block text-xs font-bold text-slate-700 mb-1.5">الحي / المنطقة في الخنق *</label>
+              <input type="text" id="sgArea" name="area" placeholder="مثال: حي النهضة، وسط البلدية..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+              <span class="err text-xs text-rose-600 hidden mt-1">الرجاء إدخال الحي أو المنطقة.</span>
+            </div>
+
+            <div id="sgIdeaGroup">
+              <label for="sgIdea" class="block text-xs font-bold text-slate-700 mb-1.5">وصف فكرة المشروع المقترح *</label>
+              <textarea id="sgIdea" name="idea" rows="4" placeholder="اشرح المشكل أو الفكرة المقترحة بالتفصيل..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition"></textarea>
+              <span class="err text-xs text-rose-600 hidden mt-1">الرجاء إدخال وصف وافٍ (10 أحرف على الأقل).</span>
+            </div>
+
+            <button type="submit" class="w-full py-3.5 px-6 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane text-emerald-200"></i>
+              <span>إرسال الاقتراح للمراجعة</span>
+            </button>
+
+            <div id="sgMsg" class="hidden p-4 rounded-xl text-xs sm:text-sm font-semibold"></div>
+          </form>
+        </div>
+
+        <!-- Priority Voting Poll (5 Cols) -->
+        <div class="lg:col-span-5 bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm" id="poll">
+          <div class="flex items-center gap-3 pb-6 border-b border-slate-100 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-gold-600 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-square-poll-vertical"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-black text-slate-900">صوّت لأولوياتك</h2>
+              <p class="text-xs text-slate-500">اختر المجالات الأهم بالنسبة لك (متعدد)</p>
+            </div>
+          </div>
+
+          <div class="space-y-2.5">
+            <label class="poll-option flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 cursor-pointer transition">
+              <span class="text-sm font-bold text-slate-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-road text-slate-400"></i> تعبيد الطرق والمسالك
+              </span>
+              <input type="checkbox" value="تعبيد الطرق" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+            </label>
+
+            <label class="poll-option flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 cursor-pointer transition">
+              <span class="text-sm font-bold text-slate-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-lightbulb text-slate-400"></i> الإنارة العمومية
+              </span>
+              <input type="checkbox" value="الإنارة" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+            </label>
+
+            <label class="poll-option flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 cursor-pointer transition">
+              <span class="text-sm font-bold text-slate-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-droplet text-slate-400"></i> التزود بالماء الصالح للشرب
+              </span>
+              <input type="checkbox" value="الماء" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+            </label>
+
+            <label class="poll-option flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 cursor-pointer transition">
+              <span class="text-sm font-bold text-slate-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-school text-slate-400"></i> صيانة المدارس والنقل
+              </span>
+              <input type="checkbox" value="المدارس" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+            </label>
+
+            <label class="poll-option flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 cursor-pointer transition">
+              <span class="text-sm font-bold text-slate-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-house-medical text-slate-400"></i> تأهيل الخدمات الصحية
+              </span>
+              <input type="checkbox" value="الصحة" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+            </label>
+
+            <label class="poll-option flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 cursor-pointer transition">
+              <span class="text-sm font-bold text-slate-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-broom text-slate-400"></i> النظافة وجمع النفايات
+              </span>
+              <input type="checkbox" value="النظافة" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+            </label>
+
+            <label class="poll-option flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 cursor-pointer transition">
+              <span class="text-sm font-bold text-slate-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-futbol text-slate-400"></i> الملاعب وفضاءات الشباب
+              </span>
+              <input type="checkbox" value="الملاعب" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+            </label>
+
+            <label class="poll-option flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 cursor-pointer transition">
+              <span class="text-sm font-bold text-slate-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-briefcase text-slate-400"></i> دعم التشغيل والمقاولات
+              </span>
+              <input type="checkbox" value="التشغيل" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+            </label>
+
+            <label class="poll-option flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 cursor-pointer transition">
+              <span class="text-sm font-bold text-slate-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-laptop text-slate-400"></i> رقمنة الخدمات البلدية
+              </span>
+              <input type="checkbox" value="الرقمنة" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+            </label>
+          </div>
+
+          <button id="voteBtn" class="w-full mt-6 py-3.5 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-check-to-slot text-gold-400"></i>
+            <span>إرسال تصويتي</span>
+          </button>
+
+          <p id="voteMsg" class="mt-4 text-center text-xs font-bold min-h-[20px]"></p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ==========================================
+       VIEW 7: الأخبار والأنشطة (NEWS)
+       ========================================== -->
+  <section id="view-news" class="view-pane">
+    <div class="bg-slate-900 text-white py-16 pattern-grid border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">مواكبة ميدانية</span>
+        <h1 class="text-3xl sm:text-4xl font-black mt-3">الأخبار <span class="text-brand-500">والأنشطة</span></h1>
+        <p class="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mt-2">مستجدات وإعلانات القائمة واللقاءات التواصلية مع ساكنة بلدية الخنق.</p>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div id="newsList" class="grid grid-cols-1 md:grid-cols-2 gap-5" aria-live="polite"></div>
+      <div id="newsEmpty" class="hidden max-w-3xl mx-auto text-center py-16 px-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <div class="w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto text-2xl mb-4">
+          <i class="fa-solid fa-newspaper"></i>
+        </div>
+        <h3 class="text-xl font-black text-slate-900 mb-2">منصة نشر الأخبار المعتمدة</h3>
+        <p class="text-slate-500 text-sm leading-relaxed max-w-lg mx-auto mb-6">
+          بنية النشر جاهزة لاستقبال التغطيات الصحفية واللقاءات الجوارية. التزامًا بمبدأ المصداقية، لن يتم اختلاق أي خبر أو موعد زائف؛ وستُنشر كافة الأنشطة فور إجرائها رسميًا.
+        </p>
+        <div class="inline-flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold border border-slate-200">
+          <i class="fa-solid fa-clock text-brand-600"></i>
+          <span>تابعونا فور انطلاق الحملة واللقاءات الميدانية</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ==========================================
+       VIEW 8: اتصل بنا (CONTACT)
+       ========================================== -->
+  <section id="view-contact" class="view-pane">
+    <div class="bg-slate-900 text-white py-16 pattern-grid border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">التواصل المستمر</span>
+        <h1 class="text-3xl sm:text-4xl font-black mt-3">اتصل <span class="text-brand-500">بنا</span></h1>
+        <p id="contactDescription" class="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mt-2">نحن في خدمة ساكنة بلدية الخنق عبر جميع القنوات والمنصات.</p>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
+      
+      <!-- Quick Contact Channels -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <a id="contactWhatsappLink" data-contact-channel="whatsapp" href="#" onclick="return false;" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-500/50 transition text-center group">
+          <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2 text-xl group-hover:scale-110 transition">
+            <i class="fa-brands fa-whatsapp"></i>
+          </div>
+          <h4 class="font-bold text-slate-800 text-xs sm:text-sm">واتساب</h4>
+        </a>
+
+        <a id="contactFacebookLink" data-contact-channel="facebook" href="#" onclick="return false;" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-blue-500/50 transition text-center group">
+          <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-2 text-xl group-hover:scale-110 transition">
+            <i class="fa-brands fa-facebook-f"></i>
+          </div>
+          <h4 class="font-bold text-slate-800 text-xs sm:text-sm">فيسبوك</h4>
+        </a>
+
+        <a id="contactInstagramLink" data-contact-channel="instagram" href="#" onclick="return false;" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-rose-500/50 transition text-center group">
+          <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-2 text-xl group-hover:scale-110 transition">
+            <i class="fa-brands fa-instagram"></i>
+          </div>
+          <h4 class="font-bold text-slate-800 text-xs sm:text-sm">إنستغرام</h4>
+        </a>
+
+        <a id="contactTelegramLink" data-contact-channel="telegram" href="#" onclick="return false;" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-sky-500/50 transition text-center group">
+          <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center mx-auto mb-2 text-xl group-hover:scale-110 transition">
+            <i class="fa-brands fa-telegram"></i>
+          </div>
+          <h4 class="font-bold text-slate-800 text-xs sm:text-sm">تيليغرام</h4>
+        </a>
+
+        <a id="contactEmailLink" data-contact-channel="email" href="mailto:contact@nabniha.ma" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-amber-500/50 transition text-center group">
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-2 text-xl group-hover:scale-110 transition">
+            <i class="fa-solid fa-envelope"></i>
+          </div>
+          <h4 class="font-bold text-slate-800 text-xs sm:text-sm">البريد</h4>
+        </a>
+
+        <a id="contactWebsiteLink" data-contact-channel="website" href="#" onclick="return false;" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-purple-500/50 transition text-center group">
+          <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-2 text-xl group-hover:scale-110 transition">
+            <i class="fa-solid fa-globe"></i>
+          </div>
+          <h4 class="font-bold text-slate-800 text-xs sm:text-sm">الموقع</h4>
+        </a>
+      </div>
+      <div id="customContactLinksSection" class="hidden">
+        <h3 class="text-lg font-black text-slate-900 mb-4 text-center">روابط صفحاتنا</h3>
+        <div id="customContactLinks" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"></div>
+      </div>
+
+      <!-- Contact Message Form -->
+      <div class="bg-white rounded-3xl p-8 max-w-2xl mx-auto border border-slate-200/80 shadow-sm">
+        <h3 class="text-xl font-black text-slate-900 mb-1 text-center">أرسل رسالة مباشرة</h3>
+        <p class="text-xs text-slate-500 text-center mb-6">يسعدنا تلقي استفساراتكم وملاحظاتكم</p>
+
+        <form id="contactForm" class="space-y-5" novalidate>
+          <div id="ctNameGroup">
+            <label for="ctName" class="block text-xs font-bold text-slate-700 mb-1.5">الاسم *</label>
+            <input type="text" id="ctName" name="name" autocomplete="name" placeholder="اسمك الكامل" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            <span class="err text-xs text-rose-600 hidden mt-1">الرجاء إدخال الاسم.</span>
+          </div>
+
+          <div id="ctEmailGroup">
+            <label for="ctEmail" class="block text-xs font-bold text-slate-700 mb-1.5">البريد الإلكتروني *</label>
+            <input type="email" id="ctEmail" name="email" autocomplete="email" placeholder="example@mail.com" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            <span class="err text-xs text-rose-600 hidden mt-1">الرجاء إدخال بريد إلكتروني صحيح.</span>
+          </div>
+
+          <div id="ctMsgGroup">
+            <label for="ctMsg" class="block text-xs font-bold text-slate-700 mb-1.5">الرسالة *</label>
+            <textarea id="ctMsg" name="message" rows="4" placeholder="نص رسالتك أو استفسارك..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition"></textarea>
+            <span class="err text-xs text-rose-600 hidden mt-1">الرجاء إدخال رسالة (10 أحرف على الأقل).</span>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 px-6 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane text-emerald-200"></i>
+            <span>إرسال الرسالة</span>
+          </button>
+
+          <div id="ctMsgOut" class="hidden p-4 rounded-xl text-xs sm:text-sm font-semibold"></div>
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-navy-950 text-slate-400 py-12 border-t border-white/10 mt-auto">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-right">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-black text-xl">ن</div>
+      <div>
+        <h4 class="text-white font-bold text-base">منصة نبنيها معًا</h4>
+        <p class="text-xs text-slate-400">قائمة شبابية مستقلة لبلدية الخنق 2026</p>
+      </div>
+    </div>
+    
+    <div class="text-xs text-slate-500">
+      <p>© 2026 قائمة نبنيها معًا — جميع الحقوق محفوظة لخدمة ساكنة الخنق.</p>
+      <p class="text-gold-400 font-semibold mt-1">«معًا نبني بلدية أفضل وأكثر تطورًا»</p>
+    </div>
+  </div>
+</footer>
+
+<!-- Interactive Detail Modal -->
+<div id="modal" class="fixed inset-0 z-50 bg-navy-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+  <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 transform transition-all relative">
+    <button id="modalCloseX" class="absolute top-5 left-5 w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+      <i class="fa-solid fa-xmark text-lg"></i>
+    </button>
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl flex-shrink-0" id="modalIconWrap">
+        <i class="fa-solid fa-layer-group" id="modalIcon"></i>
+      </div>
+      <div>
+        <span class="text-xs font-bold text-brand-600 uppercase">التزامات المحور التنموي</span>
+        <h3 class="text-xl font-black text-slate-900" id="modalTitle">عنوان المحور</h3>
+      </div>
+    </div>
+    <div class="space-y-2.5 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1 my-4" id="modalList">
+      <!-- Injected list -->
+    </div>
+    <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end">
+      <button id="modalBtnClose" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition">
+        إغلاق
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Back to Top Button -->
+<button id="toTop" class="fixed bottom-6 left-6 z-40 w-12 h-12 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white shadow-xl shadow-brand-900/40 flex items-center justify-center text-lg opacity-0 pointer-events-none transition duration-300">
+  <i class="fa-solid fa-arrow-up"></i>
+</button>
+
+<!-- SCRIPT: App Logic & Preserved Data -->
+<script>
+(function(){
+'use strict';
+
+/* البرنامج الانتخابي 2026–2031: المحاور السبعة المفصلة في الوثيقة */
+const programData = [
+  { ico:'fa-solid fa-road', photo:'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=700&q=80', title:'التهيئة الحضرية والبنية التحتية والطرق والإنارة', phases:{
+    'قريب — السنة 1':['تشخيص شامل للطرق والأرصفة والإنارة','معالجة الحفر والنقاط السوداء','إصلاح الإنارة','إزالة الردوم','تأهيل الأرصفة بمحيط المدارس والمساجد','إنشاء قاعدة بيانات رقمية','تهيئة المداخل','إعداد برنامج صيانة سنوي'],
+    'متوسط — السنتان 2–3':['تعميم الإنارة ومصابيح LED','إنشاء أرصفة وممرات آمنة','تهيئة مواقف سيارات','إنشاء ساحات عمومية ومساحات خضراء','استكمال الصرف الصحي والمياه','تهيئة الأحياء القديمة','تسمية الشوارع وترقيم المباني'],
+    'بعيد — السنتان 4–5':['تعبيد الطرق','فتح طرق جديدة','إنارة ذكية','تركيب كاميرات مراقبة','تنفيذ برنامج «حي نموذجي»','وضع مخطط صيانة وقائية','إصدار تقارير نصف سنوية'] } },
+  { ico:'fa-solid fa-leaf', photo:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=700&q=80', title:'الصحة العمومية والوقاية والبيئة والنظافة', phases:{
+    'قريب — السنة 1':['إعداد مخطط بلدي للنظافة','إطلاق برنامج دائم للنظافة في كل الأحياء','دعم وسائل الجمع','إزالة المفارغ العشوائية','تنظيم حملات نظافة شهرية','مكافحة الحشرات والقوارض والحيوانات الضالة','تنظيف المقبرة','تشكيل فرق تدخل سريع'],
+    'متوسط — السنتان 2–3':['زيادة المساحات الخضراء','إطلاق مبادرة «شجرة لكل أسرة»','تهيئة الحدائق','إنشاء فضاءات لعب آمنة','فرز النفايات وإعادة التدوير','تنظيم مسابقات أجمل حي','تنظيم أيام فحص طبي وحملات تلقيح'],
+    'بعيد — السنتان 4–5':['إعداد مخطط بيئي طويل المدى','التوجه نحو الطاقات النظيفة','رقمنة قطاع النظافة','إنشاء قاعدة بيانات بيئية','دعم الاقتصاد الأخضر','إصدار تقرير بيئي سنوي'] } },
+  { ico:'fa-solid fa-briefcase', photo:'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=700&q=80', title:'التشغيل والتنمية المحلية والاستثمار', phases:{
+    'قريب — السنة 1':['إعداد خريطة اقتصادية','فتح شباك استقبال المستثمرين','إعداد دليل استثماري','جرد العقارات القابلة للاستثمار','تنظيم لقاءات مع التجار والفلاحين','تبسيط الإجراءات','التنسيق مع أجهزة دعم التشغيل'],
+    'متوسط — السنتان 2–3':['تهيئة فضاءات للأنشطة الاقتصادية','تنظيم معارض للمنتجات المحلية','دعم الحرفيين والمبادرات النسوية','ربط التكوين بسوق العمل','دعم التعاونيات المحلية','تنمية الاقتصاد الرقمي والأخضر'],
+    'بعيد — السنتان 4–5':['إعداد رؤية اقتصادية طويلة المدى','إنشاء منطقة نشاطات','استقطاب استثمارات','دعم الاقتصاد الدائري','تطوير السياحة المحلية','إصدار تقرير اقتصادي سنوي'] } },
+  { ico:'fa-solid fa-school', photo:'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=700&q=80', title:'التربية والتعليم والتكوين ورعاية الطفولة والمدارس القرآنية', phases:{
+    'قريب — السنة 1':['تشخيص المدارس الابتدائية','تنفيذ صيانة سنوية قبل الدخول المدرسي','تحسين الإطعام والتدفئة والمرافق الصحية','إنشاء ممرات آمنة','تحسين النقل المدرسي','تكريم المتفوقين','إطلاق جائزة البلدية للتميز ولحفظة القرآن','تنظيم يوم للمعلم'],
+    'متوسط — السنتان 2–3':['إنشاء مدارس جديدة وتوسعة القائم للحد من الاكتظاظ','تهيئة ساحات رياضية وفضاءات خضراء','دعم المدارس القرآنية ومسابقات الحفظ','تنظيم مخيمات صيفية','إنشاء نوادٍ للقراءة ومعارض كتاب','تنظيم أيام إعلامية للتكوين المهني'],
+    'بعيد — السنتان 4–5':['إنشاء مجمعات مدرسية','إنشاء مكتبات جوارية','إطلاق مبادرة «مدرسة خضراء»','إصدار تقارير سنوية وإجراء تقييم دوري'] } },
+  { ico:'fa-solid fa-futbol', photo:'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80', title:'الشباب والرياضة والثقافة والحياة الجمعوية', phases:{
+    'قريب — السنة 1':['جرد المرافق','صيانة الملاعب الجوارية وإنارتها','إعداد رزنامة سنوية للأنشطة','تنظيم دورات رياضية بين الأحياء','دعم الجمعيات بمعايير شفافة','توفير فضاءات مجانية','تنظيم «يوم مع الشباب»','إطلاق جائزة الإبداع الشبابي','تكريم الرياضيين'],
+    'متوسط — السنتان 2–3':['إنشاء ملاعب جديدة','إنشاء قاعات متعددة النشاطات','تهيئة فضاءات للأطفال','إنشاء نوادٍ للمطالعة والروبوتيك','تشكيل مجلس استشاري للشباب','تنظيم ملتقى ومعرض سنوي','دعم رياضة المرأة وذوي الاحتياجات الخاصة','التوعية بمخاطر المخدرات','إطلاق مبادرة «حي نشيط»'],
+    'بعيد — السنتان 4–5':['إنشاء مركب رياضي وثقافي','إطلاق جائزة العمل التطوعي','إنشاء مكتبة عصرية','إدماج الأنشطة في الفعاليات السياحية','إصدار تقرير سنوي'] } },
+  { ico:'fa-solid fa-hand-holding-heart', photo:'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=700&q=80', title:'التضامن الاجتماعي والأسرة وذوو الاحتياجات الخاصة وكبار السن', phases:{
+    'قريب — السنة 1':['إنشاء قاعدة بيانات اجتماعية','فتح شباك استقبال وتوجيه','اعتماد معايير شفافة للمساعدات','تنظيم حملات رمضان والأعياد والدخول المدرسي','تنظيم حملات للتبرع بالدم','تهيئة المرافق لذوي الاحتياجات الخاصة','تكريم كبار السن','إنشاء سجل للجمعيات الاجتماعية','التنسيق مع الهلال الأحمر'],
+    'متوسط — السنتان 2–3':['مواصلة تهيئة المرافق','إنشاء فضاءات ترفيهية لذوي الاحتياجات الخاصة','تنظيم ملتقى للعمل الاجتماعي','دعم كفالة الأيتام','دعم الصحة النفسية','مكافحة الإدمان والعنف الأسري','تنظيم قوافل تضامنية','إبرام اتفاقيات مع الجمعيات'],
+    'بعيد — السنتان 4–5':['إنشاء مركز متعدد الخدمات الاجتماعية','إنشاء منصة إلكترونية للتطوع','إعداد دليل للجمعيات','تشكيل مجلس استشاري اجتماعي','إطلاق جائزة العمل الإنساني','إصدار تقرير اجتماعي سنوي'] } },
+  { ico:'fa-solid fa-laptop', photo:'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=700&q=80', title:'الحوكمة المحلية والرقمنة والشفافية وجودة الخدمة العمومية', phases:{
+    'قريب — السنة 1':['إطلاق منصة إلكترونية رسمية','إطلاق تطبيق هاتفي','إنشاء منصة «انشغالاتي» مع رقم تتبع','إنشاء لوحة متابعة إلكترونية','فتح مكتب موحد للاستقبال','إعداد ميثاق لجودة الاستقبال','إعداد دليل الخدمات','إنشاء أرشيف إلكتروني','تخصيص يوم استقبال أسبوعي','إطلاق صفحات رسمية على التواصل الاجتماعي','تكوين الموظفين'],
+    'متوسط — السنتان 2–3':['إتاحة حجز المواعيد إلكترونيًا','نشر برنامج الأشغال والميزانية المبسطة','إنشاء لوحة قيادة بمؤشرات الأداء','إنشاء فضاء إلكتروني للجمعيات','تنظيم لقاءات تشاورية','إجراء استطلاعات رضا','رقمنة متابعة المشاريع','تكريم الموظفين المتميزين','اعتماد مؤشرات زمنية لمعالجة الملفات'],
+    'بعيد — السنتان 4–5':['مواكبة التحول الرقمي الوطني','إصدار تقرير سنوي شامل عن تنفيذ البرنامج','إصدار تقرير أداء المجلس','إتاحة المتابعة الرقمية للمداولات','إصدار تقرير ختامي يقارن الالتزامات بالإنجاز'] } }
+].map(item => ({ ...item, points: Object.values(item.phases).flat() }));
+
+const ROUTES = ['home','about','candidate','program','projects','citizen','news','contact'];
+let currentRoute = 'home';
+const STORAGE_KEY = 'nabniha-dashboard-v1';
+function hasPublishedSupabaseContent(content) {
+  return Boolean(content && typeof content === 'object' && (
+    ['candidates', 'program', 'news', 'contactLinks'].some(key => Array.isArray(content[key]) && content[key].length > 0) ||
+    (content.contactChannels && Object.values(content.contactChannels).some(Boolean)) ||
+    (content.siteText && Object.values(content.siteText).some(value => typeof value === 'string' && value.trim()))
+  ));
+}
+const defaultSiteText = {
+  title1: 'برنامج واقعي...',
+  title2: 'التزام أخلاقي...',
+  title3: 'والإنجاز عهد نلتزم به',
+  description: 'البرنامج الانتخابي لبلدية الخنق 2026–2031؛ تشخيص للواقع، وترتيب للأولويات، والتزامات تتدرج من صلاحيات البلدية إلى الشراكة والترافع.',
+  vision: 'برنامج واقعي... التزام أخلاقي... والإنجاز عهد نلتزم به.',
+  mission: '«معًا ننجز — من أجل بلدية أفضل». الموقع: بلدية الخنق، دائرة عين ماضي، ولاية الأغواط.',
+  citizenDescription: 'صوتك أساس برنامجنا — اقترح مشروعًا لحيك وصوّت للأولويات التي تهم أسرتك.',
+  contactDescription: 'نحن في خدمة ساكنة بلدية الخنق عبر جميع القنوات والمنصات.'
+};
+let siteText = { ...defaultSiteText };
+let contactLinks = [];
+const defaultContactChannels = { whatsapp: '', facebook: '', instagram: '', telegram: '', email: 'mailto:contact@nabniha.ma', website: '' };
+let contactChannels = { ...defaultContactChannels };
+let candidateData = [{
+  name: 'مصطفى قمري',
+  role: 'وكيل القائمة',
+  specialty: 'التنمية المحلية',
+  photo: 'mus.png',
+  description: 'مهتم بالتنمية المحلية، الرقمنة الإدارية وتطوير الخدمات الميدانية لساكنة الخنق.',
+  interests: ['الرقمنة الإدارية', 'الخدمات الميدانية', 'التنمية المحلية']
+}];
+let newsData = [];
+
+const $ = id => document.getElementById(id);
+const $$ = sel => [...document.querySelectorAll(sel)];
+const counterTimers = new WeakMap();
+const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[char]));
+function safeImageUrl(value) {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (url.length <= 1700000 && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(url)) return url;
+  if (/^https?:\/\/\S+$/i.test(url)) {
+    try {
+      if (['http:', 'https:'].includes(new URL(url).protocol)) return url;
+    } catch {}
+  }
+  if (/^(?:\.{0,2}\/|\/)?[a-z0-9_-]+(?:\/[a-z0-9_.-]+)*\.(?:png|jpe?g|webp|gif)$/i.test(url)) return url;
+  return '';
+}
+function normalizeContactLinks(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(item => item && typeof item.label === 'string' && typeof item.url === 'string')
+    .map(item => ({ label: item.label.trim().slice(0, 60), url: item.url.trim() }))
+    .filter(item => item.label && /^https?:\/\//i.test(item.url) && item.url.length <= 2048);
+}
+function normalizeContactChannels(value) {
+  const links = { ...defaultContactChannels };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return links;
+  for (const key of Object.keys(links)) {
+    if (typeof value[key] !== 'string') continue;
+    const url = value[key].trim();
+    try {
+      const protocol = new URL(url).protocol;
+      if (url.length <= 2048 && (key === 'email' ? ['mailto:', 'http:', 'https:'].includes(protocol) : ['http:', 'https:'].includes(protocol))) links[key] = url;
+    } catch {}
+  }
+  return links;
+}
+function loadDashboardState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.siteText && typeof saved.siteText === 'object') {
+      Object.keys(defaultSiteText).forEach(key => {
+        if (typeof saved.siteText[key] === 'string') siteText[key] = saved.siteText[key];
+      });
+    }
+    contactLinks = normalizeContactLinks(saved.contactLinks);
+    contactChannels = normalizeContactChannels(saved.contactChannels);
+    if (Array.isArray(saved.candidates)) {
+      candidateData = saved.candidates.filter(item => item && typeof item.name === 'string').map(item => ({
+        name: item.name, role: String(item.role || 'عضو القائمة'), specialty: String(item.specialty || ''),
+        photo: safeImageUrl(item.photo), description: String(item.description || ''),
+        interests: Array.isArray(item.interests) ? item.interests.map(String) : []
+      }));
+    }
+    if (Array.isArray(saved.program) && saved.program.length) {
+      const restored = saved.program.filter(item => item && typeof item.title === 'string' && item.phases && typeof item.phases === 'object');
+      if (restored.length) {
+        programData.splice(0, programData.length, ...restored.map(item => ({
+          ico: /^fa-[\w -]+$/.test(item.ico || '') ? item.ico : 'fa-solid fa-layer-group',
+          photo: safeImageUrl(item.photo),
+          title: item.title,
+          phases: Object.fromEntries(Object.entries(item.phases).map(([phase, points]) => [phase, Array.isArray(points) ? points.map(String) : []])),
+          points: Object.values(item.phases).flat().map(String)
+        })));
+      }
+    }
+    if (Array.isArray(saved.news)) newsData = saved.news.filter(item => item && typeof item.title === 'string' && typeof item.body === 'string')
+      .map(item => ({ title: item.title, date: String(item.date || ''), body: item.body, photo: safeImageUrl(item.photo) }));
+  } catch (error) {
+    console.error('تعذر تحميل بيانات لوحة التحكم المحفوظة.', error);
+  }
+}
+/* Routing Handler */
+function showView(route) {
+  if (!ROUTES.includes(route)) route = 'home';
+  currentRoute = route;
+
+  // Toggle pane visibility
+  ROUTES.forEach(r => {
+    const pane = $('view-' + r);
+    if (pane) pane.classList.toggle('active', r === route);
+  });
+
+  // Update navigation styling
+  $$('[data-route]').forEach(link => {
+    const isTarget = link.dataset.route === route;
+    if (link.classList.contains('nav-item')) {
+      link.classList.toggle('bg-white/15', isTarget);
+      link.classList.toggle('text-white', isTarget);
+      link.classList.toggle('text-gold-400', isTarget);
+    }
+  });
+
+  // Close mobile nav if open
+  $('mobileDropdown').classList.add('hidden');
+  $('menuIcon').className = 'fa-solid fa-bars text-lg';
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function handleHashChange() {
+  const hash = (location.hash || '').replace('#', '').trim();
+  showView(hash || 'home');
+}
+
+/* Build Cards */
+function createProgramCard(item) {
+  const card = document.createElement('div');
+  card.className = 'group relative rounded-3xl overflow-hidden pcard-bg p-6 text-white cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between min-h-[220px]';
+  card.style.backgroundImage = `url('${item.photo}')`;
+
+  card.innerHTML = `
+    <div class="relative z-10 flex items-start justify-between">
+      <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-gold-400 text-xl group-hover:bg-brand-600 group-hover:text-white transition duration-300">
+        <i class="${item.ico}"></i>
+      </div>
+      <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-slate-200">
+        ${item.points.length} التزامات
+      </span>
+    </div>
+
+    <div class="relative z-10 mt-6">
+      <h3 class="text-lg font-black text-white group-hover:text-gold-400 transition mb-2">${escapeHTML(item.title)}</h3>
+      <div class="flex items-center gap-2 text-xs font-bold text-slate-300 group-hover:text-white transition">
+        <span>عرض التفاصيل</span>
+        <i class="fa-solid fa-arrow-left text-[10px] transform group-hover:-translate-x-1 transition"></i>
+      </div>
+    </div>
+  `;
+
+  card.addEventListener('click', () => openModal(item));
+  return card;
+}
+
+/* Modal Logic */
+function openModal(item) {
+  const modal = $('modal');
+  $('modalTitle').textContent = item.title;
+  $('modalIcon').className = item.ico;
+
+  const list = $('modalList');
+  list.innerHTML = '';
+  Object.entries(item.phases).forEach(([phase, points]) => {
+    const section = document.createElement('section');
+    section.className = 'mb-5 last:mb-0';
+    const heading = document.createElement('h4');
+    heading.className = 'sticky top-0 bg-white py-2 text-brand-700 font-black text-sm border-b border-slate-200 mb-2';
+    heading.textContent = phase;
+    section.appendChild(heading);
+    points.forEach((point, idx) => {
+      const li = document.createElement('div');
+      li.className = 'flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-800 text-sm font-semibold mb-2';
+      li.innerHTML = `<span class="w-6 h-6 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold flex-shrink-0">${idx + 1}</span><span></span>`;
+      li.lastElementChild.textContent = point;
+      section.appendChild(li);
+    });
+    list.appendChild(section);
+  });
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  const modal = $('modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.body.style.overflow = '';
+}
+
+/* Featured candidates carousel */
+function setupFeaturedCandidateSlider() {
+  const slider = $('featuredCandidateSlider');
+  const directory = $('candidateDirectory');
+  if (!slider || !directory) return;
+  const slideHost = $('featuredCandidateSlides');
+  if (!slideHost) return;
+  const candidateProfiles = candidateData.map((candidate, index) => ({
+    ...candidate, rank: index + 1, icon: index === 0 ? 'fa-user-tie' : 'fa-user',
+    iconColor: index === 0 ? 'text-emerald-300' : 'text-slate-200',
+    iconBg: index === 0 ? 'from-brand-700 to-navy-800' : 'from-slate-700 to-navy-800',
+    border: index === 0 ? 'border-brand-500/50' : 'border-white/20'
+  }));
+  directory.innerHTML = candidateProfiles.length ? candidateProfiles.map(candidate => `
+    <article class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-slate-100 text-brand-700 flex items-center justify-center text-lg font-black shrink-0">${candidate.rank}</div>
+      <div class="min-w-0"><span class="text-xs text-brand-700 font-bold">${escapeHTML(candidate.role)}</span><h3 class="text-base font-black text-slate-900 truncate">${escapeHTML(candidate.name)}</h3><p class="text-xs text-slate-500 mt-1">${escapeHTML(candidate.specialty)}</p></div>
+    </article>`).join('') : '<p class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">لم تتم إضافة مترشحين بعد.</p>';
+  slideHost.innerHTML = candidateProfiles.map((candidate, index) => `
+    <article class="candidate-slide bg-gradient-to-b from-navy-800 to-navy-950 p-5 sm:p-6 rounded-3xl border border-white/15 shadow-2xl overflow-hidden" data-candidate-slide ${index ? 'hidden' : ''}>
+      <div class="flex items-start gap-4 rounded-2xl bg-slate-900 border border-white/10 p-4 mb-4">
+        <div class="${candidate.photo ? 'w-28 aspect-[2/3] sm:w-32' : 'w-16 h-16 sm:w-20 sm:h-20'} rounded-2xl bg-gradient-to-tr ${candidate.iconBg} flex items-center justify-center text-white border-2 ${candidate.border} shrink-0 shadow-md overflow-hidden">${candidate.photo ? `<img src="${escapeHTML(candidate.photo)}" alt="صورة ${escapeHTML(candidate.name)}" class="w-full h-full object-cover">` : `<i class="fa-solid ${candidate.icon} text-2xl sm:text-3xl ${candidate.iconColor}" aria-hidden="true"></i>`}</div>
+        <div class="min-w-0"><span class="text-xs font-bold text-gold-400">${escapeHTML(candidate.role)}</span><h3 class="text-lg font-extrabold text-white">${escapeHTML(candidate.name)}</h3></div>
+      </div>
+      <h4 class="text-xs font-bold text-slate-300 mb-2"><i class="fa-solid fa-id-card text-gold-400 ml-1" aria-hidden="true"></i> بطاقة تقنية</h4>
+      <dl class="grid grid-cols-2 gap-2 mb-4 text-xs">
+        <div class="rounded-xl bg-white/5 border border-white/5 p-2.5"><dt class="text-slate-400">الصفة</dt><dd class="text-white font-bold mt-1">${escapeHTML(candidate.role)}</dd></div>
+        <div class="rounded-xl bg-white/5 border border-white/5 p-2.5"><dt class="text-slate-400">مجال التركيز</dt><dd class="text-white font-bold mt-1">${escapeHTML(candidate.specialty)}</dd></div>
+      </dl>
+      ${candidate.description ? `<p class="text-xs leading-relaxed text-slate-300 mb-3">${escapeHTML(candidate.description)}</p>` : ''}
+      ${candidate.interests.length ? `<div class="flex flex-wrap gap-1.5 mb-4" aria-label="مجالات الاهتمام">${candidate.interests.map(item => `<span class="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/10 text-slate-200">${escapeHTML(item)}</span>`).join('')}</div>` : ''}
+      <div class="mt-4 pt-3 border-t border-white/10 text-center">
+        <a href="#candidate" data-route="candidate" class="text-xs font-bold text-gold-400 hover:text-gold-300 inline-flex items-center justify-center gap-1.5 transition"><span>التعرف على كافة أعضاء القائمة</span><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></a>
+      </div>
+    </article>`).join('') || '<div class="rounded-3xl border border-white/15 bg-navy-900 p-6 text-center text-slate-300">أضف مترشحًا من لوحة التحكم لعرض بطاقته.</div>';
+
+  const slides = $$('[data-candidate-slide]');
+  const select = $('candidateSlideSelect');
+  const count = $('candidateSlideCount');
+  const prev = $('candidatePrev');
+  const next = $('candidateNext');
+  if (select) select.innerHTML = candidateProfiles.map((candidate, index) => `<option value="${index}">${String(index + 1).padStart(2, '0')} · ${escapeHTML(candidate.name)}</option>`).join('');
+  if (count) count.textContent = candidateProfiles.length ? `1 / ${candidateProfiles.length}` : '0 / 0';
+  if (select) select.value = '0';
+  if (!slider.dataset.carouselReady) {
+    let active = 0;
+    let timer = null;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const show = index => {
+      const currentSlides = $$('[data-candidate-slide]');
+      if (!currentSlides.length) return;
+      active = (index + currentSlides.length) % currentSlides.length;
+      currentSlides.forEach((slide, i) => {
+        slide.hidden = i !== active;
+        slide.classList.remove('is-entering');
+      });
+      if (!reducedMotion) {
+        void currentSlides[active].offsetWidth;
+        currentSlides[active].classList.add('is-entering');
+      }
+      if (select) select.value = String(active);
+      if (count) count.textContent = `${active + 1} / ${currentSlides.length}`;
+    };
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+    const start = () => {
+      stop();
+      if (reducedMotion || document.hidden || slider.matches(':hover') || slider.contains(document.activeElement)) return;
+      timer = setInterval(() => {
+        if ($('view-home')?.classList.contains('active')) show(active + 1);
+      }, 5000);
+    };
+    prev.addEventListener('click', () => { show(active - 1); start(); });
+    next.addEventListener('click', () => { show(active + 1); start(); });
+    select.addEventListener('change', () => { show(+select.value); start(); });
+    slider.addEventListener('mouseenter', stop);
+    slider.addEventListener('mouseleave', start);
+    slider.addEventListener('focusin', stop);
+    slider.addEventListener('focusout', event => { if (!slider.contains(event.relatedTarget)) start(); });
+    slider.addEventListener('keydown', event => {
+      if (event.key === 'ArrowLeft') { event.preventDefault(); show(active + 1); start(); }
+      if (event.key === 'ArrowRight') { event.preventDefault(); show(active - 1); start(); }
+    });
+    document.addEventListener('visibilitychange', start);
+    slider.dataset.carouselReady = 'true';
+  }
+}
+
+/* Category Projects View Generator */
+function renderProjectsByCategory() {
+  const container = $('projectsByCategory');
+  if (!container) return;
+  container.innerHTML = '';
+
+  programData.forEach((item, idx) => {
+    const box = document.createElement('div');
+    box.className = 'bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition';
+    box.innerHTML = `
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-sm">
+          <i class="${item.ico}"></i>
+        </div>
+        <h4 class="font-bold text-slate-900 text-base">${escapeHTML(item.title)}</h4>
+      </div>
+      <p class="text-xs text-slate-500 leading-relaxed">${item.points.slice(0, 3).map(escapeHTML).join(' • ')}</p>
+      <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+        <span class="font-bold text-slate-400">ضمن خطة التنفيذ المرحلية</span>
+        <button class="text-brand-600 font-bold hover:underline" data-program-idx="${idx}">عرض الكل</button>
+      </div>
+    `;
+    box.querySelector('button').addEventListener('click', () => openModal(item));
+    container.appendChild(box);
+  });
+}
+
+function renderProgramValues() {
+  const grid = $('valuesGrid');
+  if (!grid) return;
+  const values = [
+    ['fa-hand-holding-heart','الأمانة'],['fa-scale-balanced','النزاهة'],['fa-eye','الشفافية'],
+    ['fa-equals','العدالة والإنصاف'],['fa-user-check','المسؤولية والمحاسبة'],['fa-people-group','المشاركة'],
+    ['fa-award','الإتقان والاحترافية'],['fa-gavel','احترام القانون']
+  ];
+  grid.innerHTML = values.map(([icon, value]) => `
+    <article class="bg-white p-7 rounded-2xl border border-slate-200/80 shadow-sm text-center">
+      <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-4 text-xl"><i class="fa-solid ${icon}" aria-hidden="true"></i></div>
+      <h4 class="font-bold text-slate-900 text-base">${value}</h4>
+    </article>`).join('');
+}
+
+function renderYearOnePreviews() {
+  const projectsGrid = $('projectsYearOneGrid');
+  if (projectsGrid) {
+    projectsGrid.innerHTML = programData.map(item => `
+      <article class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div class="flex items-start gap-3 mb-3"><span class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0"><i class="${item.ico}" aria-hidden="true"></i></span><h3 class="font-bold text-slate-900 text-sm leading-relaxed">${escapeHTML(item.title)}</h3></div>
+        <ul class="space-y-1.5 text-xs text-slate-600">${(item.phases['قريب — السنة 1'] || []).slice(0, 3).map(point => `<li class="flex gap-2"><i class="fa-solid fa-check text-brand-600 mt-1" aria-hidden="true"></i><span>${escapeHTML(point)}</span></li>`).join('')}</ul>
+        <button class="mt-3 text-xs text-brand-700 font-bold hover:underline" data-program-idx="${programData.indexOf(item)}">عرض الالتزامات والآفاق</button>
+      </article>`).join('');
+    projectsGrid.querySelectorAll('[data-program-idx]').forEach(button => button.addEventListener('click', () => openModal(programData[+button.dataset.programIdx])));
+  }
+
+  const homeGrid = $('homeYearOnePreview');
+  if (homeGrid) {
+    const highlights = [programData[0], programData[1], programData[6]].filter(Boolean);
+    homeGrid.innerHTML = highlights.map(item => `
+      <article class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm text-center">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-4 text-xl"><i class="${item.ico}" aria-hidden="true"></i></div>
+        <h3 class="font-bold text-slate-900 text-base mb-2">${escapeHTML(item.title)}</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">${(item.phases['قريب — السنة 1'] || []).slice(0, 2).map(escapeHTML).join('، ')}.</p>
+      </article>`).join('');
+  }
+}
+
+/* Setup Filters */
+function setupProgramView() {
+  const grid = $('programGrid');
+  const preview = $('homeProgramPreview');
+  const filter = $('programFilter');
+  const search = $('programSearch');
+  const empty = $('programEmpty');
+
+  // Render Preview on Home
+  if (preview) {
+    preview.innerHTML = '';
+    programData.slice(0, 7).forEach(item => preview.appendChild(createProgramCard(item)));
+  }
+
+  // Render Full Program
+  function render(items) {
+    grid.innerHTML = '';
+    if (items.length === 0) {
+      empty.classList.remove('hidden');
+    } else {
+      empty.classList.add('hidden');
+      items.forEach(item => grid.appendChild(createProgramCard(item)));
+    }
+  }
+
+  // Fill Dropdown
+  const selectedFilter = filter ? filter.value : '';
+  if (filter) {
+    filter.innerHTML = '<option value="">جميع المحاور</option>';
+    programData.forEach((item, i) => {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = item.title;
+      filter.appendChild(opt);
+    });
+    filter.value = selectedFilter && +selectedFilter < programData.length ? selectedFilter : '';
+  }
+
+  function filterAction() {
+    const q = search ? search.value.trim().toLowerCase() : '';
+    const cat = filter ? filter.value : '';
+
+    const filtered = programData.filter((item, i) => {
+      const matchQ = !q || item.title.toLowerCase().includes(q) || item.points.some(p => p.toLowerCase().includes(q));
+      const matchCat = !cat || String(i) === cat;
+      return matchQ && matchCat;
+    });
+
+    render(filtered);
+  }
+
+  if (!grid.dataset.filtersReady) {
+    if (search) search.addEventListener('input', filterAction);
+    if (filter) filter.addEventListener('change', filterAction);
+    grid.dataset.filtersReady = 'true';
+  }
+  filterAction();
+}
+
+/* Forms */
+function setupForms() {
+  // Suggest Form
+  const sgForm = $('suggestForm');
+  if (sgForm) {
+    sgForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = $('sgName').value.trim();
+      const area = $('sgArea').value.trim();
+      const idea = $('sgIdea').value.trim();
+      const msg = $('sgMsg');
+
+      let valid = true;
+      $('sgNameGroup').querySelector('.err').classList.toggle('hidden', name.length >= 3);
+      if (name.length < 3) valid = false;
+
+      $('sgAreaGroup').querySelector('.err').classList.toggle('hidden', !!area);
+      if (!area) valid = false;
+
+      $('sgIdeaGroup').querySelector('.err').classList.toggle('hidden', idea.length >= 10);
+      if (idea.length < 10) valid = false;
+
+      if (!valid) {
+        msg.className = 'p-4 rounded-xl text-xs sm:text-sm font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
+        msg.textContent = 'يرجى مراجعة الحقول الإلزامية وتصحيحها.';
+        return;
+      }
+
+      msg.className = 'p-4 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+      msg.textContent = 'تم التحقق من اقتراحك بنجاح! شكرًا لمساهمتك القيمة لحيك (يحتاج ربطًا بخدمة Google Apps Script لتخزين البيانات).';
+      sgForm.reset();
+    });
+  }
+
+  // Contact Form
+  const ctForm = $('contactForm');
+  if (ctForm) {
+    ctForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = $('ctName').value.trim();
+      const email = $('ctEmail').value.trim();
+      const message = $('ctMsg').value.trim();
+      const out = $('ctMsgOut');
+      const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+      let valid = true;
+      $('ctNameGroup').querySelector('.err').classList.toggle('hidden', !!name);
+      if (!name) valid = false;
+
+      $('ctEmailGroup').querySelector('.err').classList.toggle('hidden', emailValid);
+      if (!emailValid) valid = false;
+
+      $('ctMsgGroup').querySelector('.err').classList.toggle('hidden', message.length >= 10);
+      if (message.length < 10) valid = false;
+
+      if (!valid) {
+        out.className = 'p-4 rounded-xl text-xs sm:text-sm font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
+        out.textContent = 'يرجى تصحيح الأخطاء في النموذج.';
+        return;
+      }
+
+      out.className = 'p-4 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+      out.textContent = 'تم التحقق من الرسالة بنجاح. تنبيه: النموذج تجريبي ويحتاج خدمة إرسال بريدي للربط الفعلي.';
+      ctForm.reset();
+    });
+  }
+
+  // Poll
+  const voteBtn = $('voteBtn');
+  if (voteBtn) {
+    voteBtn.addEventListener('click', () => {
+      const checked = [...document.querySelectorAll('#poll input[type=checkbox]:checked')].map(i => i.value);
+      const msg = $('voteMsg');
+
+      if (!checked.length) {
+        msg.className = 'mt-4 text-center text-xs font-bold text-rose-600';
+        msg.textContent = 'يرجى اختيار أولوية واحدة على الأقل قبل التصويت.';
+        return;
+      }
+
+      msg.className = 'mt-4 text-center text-xs font-bold text-brand-700';
+      msg.textContent = 'شكرًا لمشاركتك! تم تسجيل اختيارك: ' + checked.join(' • ') + ' (تنبيه: يحتاج لقاعدة بيانات لحفظ التصويت).';
+    });
+  }
+}
+
+/* Counters Animation */
+function initCounters() {
+  const counters = $$('[data-count]');
+  counters.forEach(counter => {
+    const previousTimer = counterTimers.get(counter);
+    if (previousTimer) clearInterval(previousTimer);
+    if (counter.id === 'yearCount') return;
+    const target = +counter.getAttribute('data-count');
+    let current = 0;
+    const step = Math.ceil(target / 40);
+    const timer = setInterval(() => {
+      current += step;
+      if (current >= target) {
+        counter.textContent = counter.id === 'yearCount' ? String(target) : target + '+';
+        clearInterval(timer);
+        counterTimers.delete(counter);
+      } else {
+        counter.textContent = current;
+      }
+    }, 30);
+    counterTimers.set(counter, timer);
+  });
+}
+
+function applySiteText() {
+  $('heroTitleLine1').textContent = siteText.title1;
+  $('heroTitleLine2').textContent = siteText.title2;
+  $('heroTitleLine3').textContent = siteText.title3;
+  $('heroDescription').textContent = siteText.description;
+  $('visionText').textContent = siteText.vision;
+  $('missionText').textContent = siteText.mission;
+  $('citizenDescription').textContent = siteText.citizenDescription;
+  $('contactDescription').textContent = siteText.contactDescription;
+  renderContactChannels();
+  renderCustomContactLinks();
+  document.title = `${siteText.title1} — منصة القائمة والبرنامج التنموي لبلدية الخنق`;
+}
+
+function renderCustomContactLinks() {
+  const section = $('customContactLinksSection');
+  const host = $('customContactLinks');
+  if (!section || !host) return;
+  host.innerHTML = contactLinks.map(item => `
+    <a href="${escapeHTML(item.url)}" target="_blank" rel="noopener noreferrer" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-brand-500/50 transition text-center group">
+      <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-2 text-xl group-hover:scale-110 transition"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></div>
+      <h4 class="font-bold text-slate-800 text-xs sm:text-sm">${escapeHTML(item.label)}</h4>
+    </a>`).join('');
+  section.classList.toggle('hidden', contactLinks.length === 0);
+}
+
+function renderContactChannels() {
+  document.querySelectorAll('[data-contact-channel]').forEach(link => {
+    const url = contactChannels[link.dataset.contactChannel] || '';
+    link.href = url || '#';
+    link.toggleAttribute('aria-disabled', !url);
+    if (url) {
+      link.removeAttribute('onclick');
+      if (url.startsWith('mailto:')) {
+        link.removeAttribute('target');
+        link.removeAttribute('rel');
+      } else {
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+      }
+    } else {
+      link.setAttribute('onclick', 'return false;');
+      link.removeAttribute('target');
+      link.removeAttribute('rel');
+    }
+  });
+}
+
+function renderNews() {
+  const host = $('newsList');
+  const empty = $('newsEmpty');
+  if (!host || !empty) return;
+  host.innerHTML = newsData.map(item => `
+    <article class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      ${item.photo ? `<img src="${escapeHTML(item.photo)}" alt="غلاف ${escapeHTML(item.title)}" class="w-full h-52 object-cover bg-slate-100">` : ''}
+      <div class="p-6">
+        <div class="flex items-center gap-2 text-xs font-bold text-brand-700 mb-3"><i class="fa-solid fa-calendar-day"></i><time>${escapeHTML(item.date)}</time></div>
+        <h2 class="text-lg font-black text-slate-900 mb-2">${escapeHTML(item.title)}</h2>
+        <p class="text-sm leading-relaxed text-slate-600 whitespace-pre-line">${escapeHTML(item.body)}</p>
+      </div>
+    </article>`).join('');
+  empty.classList.toggle('hidden', newsData.length > 0);
+}
+
+async function loadSupabaseContent() {
+  const client = window.nabnihaSupabase;
+  if (!client) return;
+  try {
+    const { data, error } = await client.from('site_content').select('content').eq('id', 1).maybeSingle();
+    if (error) throw error;
+    if (!data || !hasPublishedSupabaseContent(data.content)) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data.content));
+    loadDashboardState();
+    refreshPublicContent();
+  } catch (error) {
+    console.error('تعذر تحميل محتوى الموقع من Supabase.', error);
+  }
+}
+
+function refreshPublicContent() {
+  applySiteText();
+  setupFeaturedCandidateSlider();
+  renderYearOnePreviews();
+  setupProgramView();
+  renderProjectsByCategory();
+  renderNews();
+  const counts = {
+    axisCount: programData.length,
+    commitmentCount: programData.reduce((total, item) => total + item.points.length, 0),
+    candidateCount: candidateData.length
+  };
+  Object.entries(counts).forEach(([id, value]) => {
+    const node = $(id);
+    if (node) {
+      const previousTimer = counterTimers.get(node);
+      if (previousTimer) clearInterval(previousTimer);
+      counterTimers.delete(node);
+      node.dataset.count = String(value);
+      node.textContent = id === 'yearCount' ? String(value) : `${value}+`;
+    }
+  });
+}
+
+/* Init */
+function init() {
+  loadDashboardState();
+  refreshPublicContent();
+  loadSupabaseContent();
+  initCounters();
+  renderProgramValues();
+  setupForms();
+  window.addEventListener('storage', event => {
+    if (event.key !== STORAGE_KEY) return;
+    loadDashboardState();
+    refreshPublicContent();
+  });
+
+  // Modal Handlers
+  $('modalCloseX').addEventListener('click', closeModal);
+  $('modalBtnClose').addEventListener('click', closeModal);
+  $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  // Navigation Links Click Handling
+  document.addEventListener('click', e => {
+    const link = e.target.closest('a[data-route]');
+    if (!link) return;
+    const route = link.dataset.route;
+    if (ROUTES.includes(route)) {
+      e.preventDefault();
+      location.hash = '#' + route;
+      showView(route);
+    }
+  });
+
+  window.addEventListener('hashchange', handleHashChange);
+
+  // Mobile Menu Toggle
+  $('mobileMenuBtn').addEventListener('click', () => {
+    const dd = $('mobileDropdown');
+    const isHidden = dd.classList.contains('hidden');
+    dd.classList.toggle('hidden');
+    $('menuIcon').className = isHidden ? 'fa-solid fa-xmark text-lg' : 'fa-solid fa-bars text-lg';
+  });
+
+  // Back to Top
+  const toTop = $('toTop');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 350) {
+      toTop.classList.remove('opacity-0', 'pointer-events-none');
+    } else {
+      toTop.classList.add('opacity-0', 'pointer-events-none');
+    }
+  });
+  toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  handleHashChange();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+})();
+</script>
+</body>
+</html>
