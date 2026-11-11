@@ -204,7 +204,7 @@
     <a href="#citizen" data-route="citizen" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">فضاء المواطن</a>
     <a href="#news" data-route="news" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">الأخبار</a>
     <a href="#contact" data-route="contact" class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/10">اتصل بنا</a>
-    <a href="dashboard.html" class="block px-4 py-2.5 rounded-xl text-sm font-bold text-gold-300 hover:bg-white/10"><i class="fa-solid fa-sliders ml-2"></i>لوحة التحكم</a>
+    <a href="adminvot.html" class="block px-4 py-2.5 rounded-xl text-sm font-bold text-gold-300 hover:bg-white/10"><i class="fa-solid fa-sliders ml-2"></i>لوحة التحكم</a>
   </div>
 </header>
 
@@ -1085,13 +1085,6 @@ const programData = [
 const ROUTES = ['home','about','candidate','program','projects','citizen','news','contact'];
 let currentRoute = 'home';
 const STORAGE_KEY = 'nabniha-dashboard-v1';
-function hasPublishedSupabaseContent(content) {
-  return Boolean(content && typeof content === 'object' && (
-    ['candidates', 'program', 'news', 'contactLinks'].some(key => Array.isArray(content[key]) && content[key].length > 0) ||
-    (content.contactChannels && Object.values(content.contactChannels).some(Boolean)) ||
-    (content.siteText && Object.values(content.siteText).some(value => typeof value === 'string' && value.trim()))
-  ));
-}
 const defaultSiteText = {
   title1: 'برنامج واقعي...',
   title2: 'التزام أخلاقي...',
@@ -1172,17 +1165,15 @@ function loadDashboardState() {
         interests: Array.isArray(item.interests) ? item.interests.map(String) : []
       }));
     }
-    if (Array.isArray(saved.program) && saved.program.length) {
+    if (Array.isArray(saved.program)) {
       const restored = saved.program.filter(item => item && typeof item.title === 'string' && item.phases && typeof item.phases === 'object');
-      if (restored.length) {
-        programData.splice(0, programData.length, ...restored.map(item => ({
-          ico: /^fa-[\w -]+$/.test(item.ico || '') ? item.ico : 'fa-solid fa-layer-group',
-          photo: safeImageUrl(item.photo),
-          title: item.title,
-          phases: Object.fromEntries(Object.entries(item.phases).map(([phase, points]) => [phase, Array.isArray(points) ? points.map(String) : []])),
-          points: Object.values(item.phases).flat().map(String)
-        })));
-      }
+      programData.splice(0, programData.length, ...restored.map(item => ({
+        ico: /^fa-[\w -]+$/.test(item.ico || '') ? item.ico : 'fa-solid fa-layer-group',
+        photo: safeImageUrl(item.photo),
+        title: item.title,
+        phases: Object.fromEntries(Object.entries(item.phases).map(([phase, points]) => [phase, Array.isArray(points) ? points.map(String) : []])),
+        points: Object.values(item.phases).flatMap(points => Array.isArray(points) ? points.map(String) : [])
+      })));
     }
     if (Array.isArray(saved.news)) newsData = saved.news.filter(item => item && typeof item.title === 'string' && typeof item.body === 'string')
       .map(item => ({ title: item.title, date: String(item.date || ''), body: item.body, photo: safeImageUrl(item.photo) }));
@@ -1675,19 +1666,64 @@ function renderNews() {
   empty.classList.toggle('hidden', newsData.length > 0);
 }
 
+let lastAppliedRemoteContent = null;
+let lastRemoteRefreshAt = 0;
+function isEmptyInitialSupabaseContent(content) {
+  const textIsEmpty = !content.siteText || typeof content.siteText !== 'object' ||
+    Object.values(content.siteText).every(value => typeof value !== 'string' || !value.trim());
+  const channelsAreEmpty = !content.contactChannels || typeof content.contactChannels !== 'object' ||
+    Object.values(content.contactChannels).every(value => typeof value !== 'string' || !value.trim());
+  return textIsEmpty && channelsAreEmpty &&
+    ['contactLinks', 'candidates', 'program', 'news'].every(key => Array.isArray(content[key]) && content[key].length === 0);
+}
+async function applySupabaseContent(content) {
+  if (!content || typeof content !== 'object' || Array.isArray(content)) {
+    throw new Error('محتوى سجل site_content غير صالح.');
+  }
+  if (isEmptyInitialSupabaseContent(content)) return false;
+  const serialized = JSON.stringify(content);
+  localStorage.setItem(STORAGE_KEY, serialized);
+  lastAppliedRemoteContent = serialized;
+  loadDashboardState();
+  refreshPublicContent();
+  return true;
+}
+
 async function loadSupabaseContent() {
   const client = window.nabnihaSupabase;
+  if (!client) return false;
+  const { data, error } = await client.from('site_content').select('content').eq('id', 1).maybeSingle();
+  if (error) throw error;
+  lastRemoteRefreshAt = Date.now();
+  if (!data) return false;
+  return applySupabaseContent(data.content);
+}
+
+function refreshSupabaseContentIfNeeded() {
+  if (Date.now() - lastRemoteRefreshAt < 15000 || document.hidden) return;
+  loadSupabaseContent().catch(error => console.error('تعذر تحديث محتوى الموقع من Supabase.', error));
+}
+
+function subscribeToSupabaseContent() {
+  const client = window.nabnihaSupabase;
   if (!client) return;
-  try {
-    const { data, error } = await client.from('site_content').select('content').eq('id', 1).maybeSingle();
-    if (error) throw error;
-    if (!data || !hasPublishedSupabaseContent(data.content)) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data.content));
-    loadDashboardState();
-    refreshPublicContent();
-  } catch (error) {
-    console.error('تعذر تحميل محتوى الموقع من Supabase.', error);
-  }
+  client.channel('site-content-public')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'site_content',
+      filter: 'id=eq.1'
+    }, payload => {
+      if (payload.eventType === 'DELETE' || !payload.new || !payload.new.content) return;
+      applySupabaseContent(payload.new.content).catch(error => {
+        console.error('تعذر تطبيق تحديث محتوى Supabase.', error);
+      });
+    })
+    .subscribe(status => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.error(`تعذر الاشتراك في تحديثات Supabase المباشرة: ${status}`);
+      }
+    });
 }
 
 function refreshPublicContent() {
@@ -1718,15 +1754,24 @@ function refreshPublicContent() {
 function init() {
   loadDashboardState();
   refreshPublicContent();
-  loadSupabaseContent();
+  loadSupabaseContent().catch(error => console.error('تعذر تحميل محتوى الموقع من Supabase.', error));
+  subscribeToSupabaseContent();
   initCounters();
   renderProgramValues();
   setupForms();
   window.addEventListener('storage', event => {
     if (event.key !== STORAGE_KEY) return;
-    loadDashboardState();
-    refreshPublicContent();
+    if (!window.nabnihaSupabase) {
+      loadDashboardState();
+      refreshPublicContent();
+    } else {
+      const newValue = event.newValue;
+      if (newValue && newValue === lastAppliedRemoteContent) return;
+      loadSupabaseContent().catch(error => console.error('تعذر التحقق من تحديث محتوى Supabase.', error));
+    }
   });
+  window.addEventListener('focus', refreshSupabaseContentIfNeeded);
+  document.addEventListener('visibilitychange', refreshSupabaseContentIfNeeded);
 
   // Modal Handlers
   $('modalCloseX').addEventListener('click', closeModal);

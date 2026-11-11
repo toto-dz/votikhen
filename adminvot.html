@@ -203,29 +203,29 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
   <a href="#admin-contact" class="admin-nav-link"><i class="fa-solid fa-address-card"></i><span>اتصل بنا</span></a>
   <div class="admin-sidebar-caption admin-sidebar-caption-bottom">الأدوات</div>
   <a href="#admin-backup" class="admin-nav-link"><i class="fa-solid fa-box-archive"></i><span>النسخ الاحتياطي</span></a>
-  <a href="intakhib021.html" class="admin-nav-link admin-public-link"><i class="fa-solid fa-arrow-up-right-from-square"></i><span>معاينة الموقع</span></a>
-  <div class="admin-sidebar-footer"><span class="admin-online-dot"></span> التخزين المحلي مفعّل</div>
+  <a href="index.html" class="admin-nav-link admin-public-link"><i class="fa-solid fa-arrow-up-right-from-square"></i><span>معاينة الموقع</span></a>
+  <div class="admin-sidebar-footer"><span class="admin-online-dot"></span> <span id="adminStorageIndicator">جارٍ التحقق من Supabase...</span></div>
 </nav>
 <main id="app" class="flex-1">
 <section id="view-admin" class="view-pane">
     <div class="bg-slate-900 text-white py-12 pattern-grid border-b border-white/10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <a href="intakhib021.html" class="inline-flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white mb-5"><i class="fa-solid fa-arrow-right"></i>العودة إلى صفحة العرض</a>
+        <a href="index.html" class="inline-flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white mb-5"><i class="fa-solid fa-arrow-right"></i>العودة إلى صفحة العرض</a>
         <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">إدارة محتوى الموقع</span>
         <h1 class="text-3xl sm:text-4xl font-black mt-3">لوحة <span class="text-brand-500">التحكم</span></h1>
         <p class="text-slate-300 text-sm mt-2">حدّث النصوص والمترشحين ومحاور البرنامج والأخبار، ثم احفظ التغييرات.</p>
       </div>
     </div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
-      <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        <i class="fa-solid fa-circle-info ml-2"></i>لوحة مستقلة عن صفحة العرض. تُحفظ التغييرات في المتصفح نفسه وتظهر عند فتح صفحة العرض في المتصفح ذاته. النشر على أجهزة أو خوادم أخرى يحتاج إلى خدمة خلفية.
+      <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+        <i class="fa-solid fa-circle-info ml-2"></i>تُزامَن التغييرات مع Supabase بعد تسجيل الدخول بحساب مسؤول معتمد. عند تعذر المزامنة تبقى نسخة محلية معلّمة بوضوح حتى إعادة المحاولة.
       </div>
       <div id="adminStatus" class="hidden rounded-xl p-3 text-sm font-bold" role="status" aria-live="polite"></div>
 
       <section id="admin-overview" data-admin-panel="overview" class="admin-settings-section bg-transparent" hidden>
         <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
           <div><span class="text-xs font-black text-brand-700">نظرة عامة</span><h2 class="text-2xl font-black text-slate-900 mt-1">مرحبًا بك في لوحة الإدارة</h2><p class="text-sm text-slate-500 mt-1">ملخص سريع لمحتوى منصة نبنيها معًا.</p></div>
-          <a href="intakhib021.html" target="_blank" rel="noopener" class="admin-tool-btn admin-tool-light"><i class="fa-solid fa-eye"></i> فتح الموقع للمعاينة</a>
+          <a href="index.html" target="_blank" rel="noopener" class="admin-tool-btn admin-tool-light"><i class="fa-solid fa-eye"></i> فتح الموقع للمعاينة</a>
         </div>
         <div class="admin-overview-grid">
           <article class="admin-stat-card"><div class="admin-stat-icon"><i class="fa-solid fa-users"></i></div><div id="overviewCandidateCount" class="admin-stat-value">—</div><div class="admin-stat-label">المترشحون</div></article>
@@ -358,7 +358,8 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
             <input id="supabasePassword" type="password" autocomplete="current-password" required class="admin-field" placeholder="كلمة المرور">
             <div class="sm:col-span-2 flex flex-wrap items-center gap-2">
               <button type="submit" class="admin-primary">تسجيل الدخول إلى Supabase</button>
-              <button type="button" id="supabasePublishLocal" class="admin-secondary hidden">نشر المحتوى المحلي إلى قاعدة البيانات</button>
+              <button type="button" id="supabasePublishLocal" class="admin-secondary hidden">مزامنة التعديلات المحلية إلى قاعدة البيانات</button>
+              <button type="button" id="supabaseRefreshRemote" class="admin-secondary hidden">تحميل أحدث بيانات قاعدة البيانات</button>
             </div>
           </form>
           <p class="mt-3 text-xs text-slate-500">أنشئ حساب الإدارة في Supabase Auth، ثم أضف معرّف المستخدم إلى جدول site_admins باستخدام ملف الإعداد.</p>
@@ -414,7 +415,14 @@ const programData = [
 const ROUTES = ['home','about','candidate','program','projects','citizen','news','contact'];
 let currentRoute = 'home';
 const STORAGE_KEY = 'nabniha-dashboard-v1';
+const SYNCED_STORAGE_KEY = 'nabniha-dashboard-synced-v1';
 let supabaseSession = null;
+let isSupabaseAdmin = false;
+let localEditVersion = 0;
+let pendingLocalChanges = false;
+let requiresConflictResolution = false;
+let lastKnownRemoteUpdatedAt = null;
+let syncQueue = Promise.resolve();
 const defaultSiteText = {
   title1: 'برنامج واقعي...',
   title2: 'التزام أخلاقي...',
@@ -475,78 +483,175 @@ function normalizeContactChannels(value) {
   }
   return links;
 }
+function applyDashboardContent(saved) {
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) throw new Error('محتوى قاعدة البيانات غير صالح.');
+  if (saved.siteText && typeof saved.siteText === 'object' && !Array.isArray(saved.siteText)) {
+    Object.keys(defaultSiteText).forEach(key => {
+      if (typeof saved.siteText[key] === 'string') siteText[key] = saved.siteText[key];
+    });
+  }
+  if (Array.isArray(saved.contactLinks)) contactLinks = normalizeContactLinks(saved.contactLinks);
+  if (saved.contactChannels && typeof saved.contactChannels === 'object') contactChannels = normalizeContactChannels(saved.contactChannels);
+  if (Array.isArray(saved.candidates)) candidateData = saved.candidates.filter(item => item && typeof item.name === 'string').map(item => ({
+    name: item.name, role: String(item.role || 'عضو القائمة'), specialty: String(item.specialty || ''),
+    photo: safeImageUrl(item.photo), description: String(item.description || ''),
+    interests: Array.isArray(item.interests) ? item.interests.map(String) : []
+  }));
+  if (Array.isArray(saved.program)) {
+    const restored = saved.program.filter(item => item && typeof item.title === 'string' && item.phases && typeof item.phases === 'object');
+    programData.splice(0, programData.length, ...restored.map(item => ({
+      ico: /^fa-[\w -]+$/.test(item.ico || '') ? item.ico : 'fa-solid fa-layer-group',
+      photo: safeImageUrl(item.photo),
+      title: item.title,
+      phases: Object.fromEntries(Object.entries(item.phases).map(([phase, points]) => [phase, Array.isArray(points) ? points.map(String) : []])),
+      points: Object.values(item.phases).flatMap(points => Array.isArray(points) ? points.map(String) : [])
+    })));
+  }
+  if (Array.isArray(saved.news)) newsData = saved.news.filter(item => item && typeof item.title === 'string' && typeof item.body === 'string')
+    .map(item => ({ title: item.title, date: String(item.date || ''), body: item.body, photo: safeImageUrl(item.photo) }));
+}
+function getDashboardContent() {
+  return {
+    siteText, contactLinks, contactChannels, candidates: candidateData, program: programData, news: newsData
+  };
+}
+function isEmptyInitialSupabaseContent(content) {
+  const textIsEmpty = !content.siteText || typeof content.siteText !== 'object' ||
+    Object.values(content.siteText).every(value => typeof value !== 'string' || !value.trim());
+  const channelsAreEmpty = !content.contactChannels || typeof content.contactChannels !== 'object' ||
+    Object.values(content.contactChannels).every(value => typeof value !== 'string' || !value.trim());
+  return textIsEmpty && channelsAreEmpty &&
+    ['contactLinks', 'candidates', 'program', 'news'].every(key => Array.isArray(content[key]) && content[key].length === 0);
+}
 function loadDashboardState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
-    const saved = JSON.parse(raw);
-    if (saved.siteText && typeof saved.siteText === 'object') {
-      Object.keys(defaultSiteText).forEach(key => {
-        if (typeof saved.siteText[key] === 'string') siteText[key] = saved.siteText[key];
-      });
-    }
-    contactLinks = normalizeContactLinks(saved.contactLinks);
-    contactChannels = normalizeContactChannels(saved.contactChannels);
-    if (Array.isArray(saved.candidates)) {
-      candidateData = saved.candidates.filter(item => item && typeof item.name === 'string').map(item => ({
-        name: item.name, role: String(item.role || 'عضو القائمة'), specialty: String(item.specialty || ''),
-        photo: safeImageUrl(item.photo), description: String(item.description || ''),
-        interests: Array.isArray(item.interests) ? item.interests.map(String) : []
-      }));
-    }
-    if (Array.isArray(saved.program) && saved.program.length) {
-      const restored = saved.program.filter(item => item && typeof item.title === 'string' && item.phases && typeof item.phases === 'object');
-      if (restored.length) {
-        programData.splice(0, programData.length, ...restored.map(item => ({
-          ico: /^fa-[\w -]+$/.test(item.ico || '') ? item.ico : 'fa-solid fa-layer-group',
-          photo: safeImageUrl(item.photo),
-          title: item.title,
-          phases: Object.fromEntries(Object.entries(item.phases).map(([phase, points]) => [phase, Array.isArray(points) ? points.map(String) : []])),
-          points: Object.values(item.phases).flat().map(String)
-        })));
-      }
-    }
-    if (Array.isArray(saved.news)) newsData = saved.news.filter(item => item && typeof item.title === 'string' && typeof item.body === 'string')
-      .map(item => ({ title: item.title, date: String(item.date || ''), body: item.body, photo: safeImageUrl(item.photo) }));
+    applyDashboardContent(JSON.parse(raw));
   } catch (error) {
     console.error('تعذر تحميل بيانات لوحة التحكم المحفوظة.', error);
     showDashboardStatus('تعذر تحميل التغييرات المحفوظة؛ يتم عرض البيانات الافتراضية.', true);
   }
 }
-function hasPublishedSupabaseContent(content) {
-  return Boolean(content && typeof content === 'object' && (
-    ['candidates', 'program', 'news', 'contactLinks'].some(key => Array.isArray(content[key]) && content[key].length > 0) ||
-    (content.contactChannels && Object.values(content.contactChannels).some(Boolean)) ||
-    (content.siteText && Object.values(content.siteText).some(value => typeof value === 'string' && value.trim()))
-  ));
+function setLocalContent(content) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
 }
-function saveDashboardState() {
+function getReadableSupabaseError(error) {
+  if (error && error.code === 'LOCAL_CONFLICT') {
+    return 'تغير المحتوى في Supabase منذ تحميله. احتُفظ بتعديلاتك محليًا؛ حمّل النسخة الأحدث أو أكّد مزامنة نسختك.';
+  }
+  if (error && (error.code === '42501' || error.status === 401 || error.status === 403)) {
+    return 'رفضت صلاحيات Supabase العملية. تحقق من أن حسابك موجود في site_admins وسياسات RLS.';
+  }
+  return 'تعذر الاتصال أو الكتابة إلى Supabase. احتُفظ بالتعديلات محليًا لإعادة المحاولة.';
+}
+async function uploadInlineImages(client, content) {
+  const uploaded = JSON.parse(JSON.stringify(content));
+  const imageRecords = [
+    ...(uploaded.candidates || []).map(item => ({ item, kind: 'candidates' })),
+    ...(uploaded.program || []).map(item => ({ item, kind: 'program' })),
+    ...(uploaded.news || []).map(item => ({ item, kind: 'news' }))
+  ];
+  for (const { item, kind } of imageRecords) {
+    const dataUrl = item.photo;
+    if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) continue;
+    const response = await fetch(dataUrl);
+    if (!response.ok) throw new Error('تعذر قراءة الصورة المحلية قبل رفعها.');
+    const blob = await response.blob();
+    const extension = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+    const randomBytes = new Uint8Array(12);
+    crypto.getRandomValues(randomBytes);
+    const filename = Array.from(randomBytes, value => value.toString(16).padStart(2, '0')).join('');
+    const path = `${kind}/${Date.now()}-${filename}.${extension}`;
+    const { error } = await client.storage.from('site-images').upload(path, blob, {
+      cacheControl: '31536000',
+      contentType: blob.type || 'image/jpeg',
+      upsert: false
+    });
+    if (error) throw error;
+    item.photo = client.storage.from('site-images').getPublicUrl(path).data.publicUrl;
+  }
+  return uploaded;
+}
+async function saveDashboardState() {
   try {
-    const content = {
-      siteText, contactLinks, contactChannels, candidates: candidateData, program: programData, news: newsData
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+    const content = JSON.parse(JSON.stringify(getDashboardContent()));
+    setLocalContent(content);
+    const version = ++localEditVersion;
+    pendingLocalChanges = true;
     updateAdminOverview();
     const client = window.nabnihaSupabase;
-    if (client && supabaseSession?.user) {
-      client.from('site_content').upsert({ id: 1, content }, { onConflict: 'id' })
-        .then(({ error }) => {
-          if (error) {
-            console.error('تعذر مزامنة التغييرات مع Supabase.', error);
-            showDashboardStatus('حُفظت التغييرات محليًا، لكن تعذرت مزامنتها مع Supabase. تحقق من صلاحيات حساب الإدارة.', true);
-          } else showDashboardStatus('تم حفظ التغييرات ومزامنتها مع Supabase.');
-        })
-        .catch(error => {
-          console.error('تعذر الاتصال بـ Supabase أثناء الحفظ.', error);
-          showDashboardStatus('حُفظت التغييرات محليًا، لكن تعذر الاتصال بـ Supabase.', true);
-        });
-    } else {
-      showDashboardStatus('تم الحفظ محليًا. سجّل الدخول إلى Supabase لمزامنة التغييرات مع قاعدة البيانات.');
+    if (!client || !isSupabaseAdmin || !supabaseSession?.user) {
+      showDashboardStatus('حُفظت التعديلات محليًا فقط؛ سجّل الدخول بحساب مسؤول معتمد لمزامنتها.', true);
+      updateAdminOverview();
+      return false;
     }
-    return true;
+    if (requiresConflictResolution) {
+      showDashboardStatus('حُفظت التعديلات محليًا فقط. أكّد «مزامنة التعديلات المحلية» بعد مراجعة التعارض قبل استبدال محتوى Supabase.', true);
+      updateAdminOverview();
+      return false;
+    }
+    showDashboardStatus('جارٍ حفظ التعديلات في Supabase...');
+    const queuedSave = syncQueue.catch(() => {}).then(async () => {
+      const remoteContent = await uploadInlineImages(client, content);
+      const { data: current, error: readError } = await client.from('site_content')
+        .select('updated_at').eq('id', 1).maybeSingle();
+      if (readError) throw readError;
+      let data;
+      if (current) {
+        if (lastKnownRemoteUpdatedAt && current.updated_at !== lastKnownRemoteUpdatedAt) {
+          const conflict = new Error('The remote content changed after it was loaded.');
+          conflict.code = 'LOCAL_CONFLICT';
+          requiresConflictResolution = true;
+          throw conflict;
+        }
+        const expectedUpdatedAt = lastKnownRemoteUpdatedAt || current.updated_at;
+        const result = await client.from('site_content')
+          .update({ content: remoteContent })
+          .eq('id', 1)
+          .eq('updated_at', expectedUpdatedAt)
+          .select('id,content,updated_at')
+          .maybeSingle();
+        if (result.error) throw result.error;
+        if (!result.data) {
+          const conflict = new Error('The remote content changed while saving.');
+          conflict.code = 'LOCAL_CONFLICT';
+          requiresConflictResolution = true;
+          throw conflict;
+        }
+        data = result.data;
+      } else {
+        const result = await client.from('site_content')
+          .upsert({ id: 1, content: remoteContent }, { onConflict: 'id' })
+          .select('id,content,updated_at')
+          .single();
+        if (result.error) throw result.error;
+        data = result.data;
+      }
+      if (!data) throw new Error('لم يؤكد Supabase حفظ السجل.');
+      lastKnownRemoteUpdatedAt = data.updated_at;
+      localStorage.setItem(SYNCED_STORAGE_KEY, JSON.stringify(content));
+      pendingLocalChanges = version !== localEditVersion;
+      if (version === localEditVersion) {
+        requiresConflictResolution = false;
+        setLocalContent(remoteContent);
+        localStorage.setItem(SYNCED_STORAGE_KEY, JSON.stringify(remoteContent));
+        applyDashboardContent(remoteContent);
+        window.dispatchEvent(new Event('nabniha-dashboard-content-updated'));
+        showDashboardStatus('تم حفظ التعديلات ومزامنتها مع Supabase بنجاح.');
+      } else {
+        showDashboardStatus('تم حفظ نسخة، وجارٍ مزامنة التعديلات الأحدث...');
+      }
+      updateAdminOverview();
+      return true;
+    });
+    syncQueue = queuedSave;
+    return await queuedSave;
   } catch (error) {
     console.error('تعذر حفظ بيانات لوحة التحكم.', error);
-    showDashboardStatus('تعذر حفظ التغييرات. تحقق من مساحة التخزين في المتصفح.', true);
+    showDashboardStatus(`فشلت المزامنة؛ التعديلات محفوظة محليًا فقط. ${getReadableSupabaseError(error)}`, true);
+    pendingLocalChanges = true;
+    updateAdminOverview();
     return false;
   }
 }
@@ -562,7 +667,13 @@ function updateAdminOverview() {
   const values = { overviewCandidateCount: candidateData.length, overviewProgramCount: programData.length, overviewCommitmentCount: commitments, overviewNewsCount: newsData.length };
   Object.entries(values).forEach(([id, value]) => { const node = $(id); if (node) node.textContent = String(value); });
   const status = $('overviewStorageStatus');
-  if (status) status.textContent = localStorage.getItem(STORAGE_KEY) ? 'توجد بيانات محفوظة محليًا على هذا المتصفح.' : 'لم تُحفظ تعديلات بعد؛ البيانات الحالية هي البيانات الافتراضية.';
+  if (status) status.textContent = pendingLocalChanges
+    ? 'توجد تعديلات محلية لم تتم مزامنتها مع Supabase.'
+    : isSupabaseAdmin ? 'المحتوى المحلي مطابق لآخر نسخة مؤكدة في Supabase.' : 'سجّل الدخول كمسؤول للتحقق من حالة المزامنة.';
+  const indicator = $('adminStorageIndicator');
+  if (indicator) indicator.textContent = pendingLocalChanges
+    ? 'تعديلات محلية تنتظر المزامنة'
+    : isSupabaseAdmin ? 'مسؤول معتمد؛ المزامنة مفعّلة' : 'يلزم تسجيل الدخول كمسؤول';
   const date = $('backupLastDate');
   if (date) date.textContent = 'ملاحظة: أنشئ نسخة احتياطية قبل حذف بيانات المتصفح أو تغيير الجهاز.';
 }
@@ -1259,29 +1370,30 @@ function setupDashboard() {
   const quickBackupBtn = $('adminQuickBackup');
   [exportBtn, quickBackupBtn].filter(Boolean).forEach(button => button.addEventListener('click', downloadDashboardBackup));
   const quickPreview = $('adminQuickPreview');
-  if (quickPreview) quickPreview.addEventListener('click', () => window.open('intakhib021.html', '_blank', 'noopener'));
+  if (quickPreview) quickPreview.addEventListener('click', () => window.open('index.html', '_blank', 'noopener'));
   const importInput = $('importBackupFile');
-  if (importInput) importInput.addEventListener('change', async event => {
+  if (importInput)   importInput.addEventListener('change', async event => {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
     try {
       const imported = JSON.parse(await file.text());
       const valid = imported && imported.siteText && typeof imported.siteText === 'object' && Array.isArray(imported.candidates) && Array.isArray(imported.program) && Array.isArray(imported.news);
       if (!valid) throw new Error('invalid-backup');
-      if (!window.confirm('سيتم استبدال البيانات الحالية بمحتوى النسخة الاحتياطية. هل تريد المتابعة؟')) { event.target.value = ''; return; }
-      if (window.nabnihaSupabase && !supabaseSession?.user) {
-        showDashboardStatus('سجّل الدخول إلى Supabase قبل استيراد نسخة احتياطية حتى لا تُستبدل محليًا فقط.', true);
+      if (!window.confirm('سيتم استبدال المحتوى المحلي ومحتوى Supabase بمحتوى النسخة الاحتياطية. هل تريد المتابعة؟')) { event.target.value = ''; return; }
+      if (!isSupabaseAdmin) {
+        showDashboardStatus('استيراد النسخ الاحتياطية متاح للمسؤولين المعتمدين فقط.', true);
         event.target.value = '';
         return;
       }
       const normalized = { siteText: imported.siteText, contactLinks: normalizeContactLinks(imported.contactLinks), contactChannels: normalizeContactChannels(imported.contactChannels), candidates: imported.candidates, program: imported.program, news: imported.news };
-      if (supabaseSession?.user && window.nabnihaSupabase) {
-        const { error } = await window.nabnihaSupabase.from('site_content').upsert({ id: 1, content: normalized }, { onConflict: 'id' });
-        if (error) throw error;
-      }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-      showDashboardStatus('تم استيراد النسخة الاحتياطية. سيتم تحديث لوحة التحكم الآن.');
-      window.location.reload();
+      applyDashboardContent(normalized);
+      fillSiteForm();
+      renderCandidateAdmin();
+      renderProgramSelect(0);
+      fillProgramForm();
+      renderNewsAdmin();
+      refreshPublicContent();
+      if (!await saveDashboardState()) event.target.value = '';
     } catch (error) {
       console.error('تعذر استيراد النسخة الاحتياطية.', error);
       showDashboardStatus('تعذر استيراد الملف. تأكد أنه نسخة JSON صادرة من لوحة نبنيها معًا.', true);
@@ -1289,7 +1401,7 @@ function setupDashboard() {
     }
   });
 
-  textForm.addEventListener('submit', event => {
+  textForm.addEventListener('submit', async event => {
     event.preventDefault();
     const activePanel = location.hash.replace(/^#admin-/, '');
     const requiredFields = $$(`#siteTextForm [data-admin-panel~="${activePanel}"] [required]`);
@@ -1355,7 +1467,7 @@ function setupDashboard() {
       contactDescription: $('adminContactDescription').value.trim()
     };
     refreshPublicContent();
-    saveDashboardState();
+    await saveDashboardState();
   });
 
   $('candidateNewBtn').addEventListener('click', () => {
@@ -1394,7 +1506,7 @@ function setupDashboard() {
     renderCandidatePreviewFromForm();
   });
   $('candidateCancelBtn').addEventListener('click', closeCandidateForm);
-  candidateHost.addEventListener('click', event => {
+  candidateHost.addEventListener('click', async event => {
     const edit = event.target.closest('[data-candidate-edit]');
     const remove = event.target.closest('[data-candidate-delete]');
     if (edit) {
@@ -1420,10 +1532,10 @@ function setupDashboard() {
       renderCandidateAdmin();
       renderCandidatePreview(candidateData[0] || { name: '', role: '', specialty: '', photo: '', description: '', interests: [] });
       refreshPublicContent();
-      saveDashboardState();
+      await saveDashboardState();
     }
   });
-  candidateForm.addEventListener('submit', event => {
+  candidateForm.addEventListener('submit', async event => {
     event.preventDefault();
     const photoInput = $('candidatePhotoData').value || $('candidatePhoto').value.trim();
     const photo = safeImageUrl(photoInput);
@@ -1444,7 +1556,7 @@ function setupDashboard() {
     renderCandidatePreview(candidateData[index === '' ? candidateData.length - 1 : +index]);
     renderCandidateAdmin();
     refreshPublicContent();
-    saveDashboardState();
+    await saveDashboardState();
   });
 
   $('programNewBtn').addEventListener('click', () => {
@@ -1483,7 +1595,7 @@ function setupDashboard() {
     $('adminProgramPhotoFile').value = '';
     renderProgramCoverPreview();
   });
-  $('programDeleteBtn').addEventListener('click', () => {
+  $('programDeleteBtn').addEventListener('click', async () => {
     if (!programData.length) return;
     if (programData.length === 1) {
       showDashboardStatus('يجب الإبقاء على محور واحد على الأقل في البرنامج.', true);
@@ -1495,9 +1607,9 @@ function setupDashboard() {
     renderProgramSelect(Math.max(0, index - 1));
     fillProgramForm();
     refreshPublicContent();
-    saveDashboardState();
+    await saveDashboardState();
   });
-  programForm.addEventListener('submit', event => {
+  programForm.addEventListener('submit', async event => {
     event.preventDefault();
     if (!$('adminProgramTitle').value.trim()) {
       showDashboardStatus('يرجى إدخال عنوان المحور قبل الحفظ.', true);
@@ -1527,7 +1639,7 @@ function setupDashboard() {
     item.points = Object.values(item.phases).flat();
     renderProgramSelect(index);
     refreshPublicContent();
-    saveDashboardState();
+    await saveDashboardState();
   });
 
   $('newsNewBtn').addEventListener('click', () => {
@@ -1566,7 +1678,7 @@ function setupDashboard() {
     renderNewsCoverPreview();
   });
   $('newsCancelBtn').addEventListener('click', closeNewsForm);
-  newsHost.addEventListener('click', event => {
+  newsHost.addEventListener('click', async event => {
     const edit = event.target.closest('[data-news-edit]');
     const remove = event.target.closest('[data-news-delete]');
     if (edit) {
@@ -1589,10 +1701,10 @@ function setupDashboard() {
       newsData.splice(index, 1);
       renderNewsAdmin();
       refreshPublicContent();
-      saveDashboardState();
+      await saveDashboardState();
     }
   });
-  newsForm.addEventListener('submit', event => {
+  newsForm.addEventListener('submit', async event => {
     event.preventDefault();
     const photoInput = $('newsPhotoData').value || $('newsPhoto').value.trim();
     const photo = safeImageUrl(photoInput);
@@ -1608,17 +1720,29 @@ function setupDashboard() {
     closeNewsForm();
     renderNewsAdmin();
     refreshPublicContent();
-    saveDashboardState();
+    await saveDashboardState();
   });
 
   const supabaseClient = window.nabnihaSupabase;
   const supabaseAuthStatus = $('supabaseAuthStatus');
   const supabaseSignOut = $('supabaseSignOut');
   const supabasePublishLocal = $('supabasePublishLocal');
-  const setSupabaseAuthStatus = message => { supabaseAuthStatus.textContent = message; };
-  const refreshAdminFromRemote = content => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
-    loadDashboardState();
+  const supabaseRefreshRemote = $('supabaseRefreshRemote');
+  const adminStorageIndicator = $('adminStorageIndicator');
+  const setSupabaseAuthStatus = message => { if (supabaseAuthStatus) supabaseAuthStatus.textContent = message; };
+  let databaseConnectionVerified = false;
+  let adminReadyForEditing = false;
+  const setAdminEditingEnabled = enabled => {
+    const selectors = [
+      '#siteTextForm input', '#siteTextForm textarea', '#siteTextForm button',
+      '#candidateNewBtn', '#candidateForm input', '#candidateForm textarea', '#candidateForm button',
+      '#adminCandidates button', '#programNewBtn', '#programForm input', '#programForm textarea',
+      '#programForm select', '#programForm button', '#newsNewBtn', '#newsForm input',
+      '#newsForm textarea', '#newsForm button', '#adminNews button', '#importBackupFile'
+    ];
+    document.querySelectorAll(selectors.join(',')).forEach(control => { control.disabled = !enabled; });
+  };
+  const refreshAdminUi = () => {
     fillSiteForm();
     renderCandidateAdmin();
     renderCandidatePreview(candidateData[0] || { name: '', role: '', specialty: '', photo: '', description: '', interests: [] });
@@ -1626,88 +1750,212 @@ function setupDashboard() {
     fillProgramForm();
     renderNewsAdmin();
     updateAdminOverview();
+    setAdminEditingEnabled(isSupabaseAdmin && adminReadyForEditing);
   };
-  const loadSupabaseContent = async () => {
-    if (!supabaseClient) return;
-    const { data, error } = await supabaseClient.from('site_content').select('content').eq('id', 1).maybeSingle();
-    if (error) throw error;
-    if (data && hasPublishedSupabaseContent(data.content)) refreshAdminFromRemote(data.content);
-    return Boolean(data && hasPublishedSupabaseContent(data.content));
+  const refreshAdminFromRemote = (content, force = false) => {
+    if (!content || typeof content !== 'object' || Array.isArray(content)) {
+      throw new Error('محتوى سجل site_content غير صالح.');
+    }
+    const localRaw = localStorage.getItem(STORAGE_KEY);
+    const syncedRaw = localStorage.getItem(SYNCED_STORAGE_KEY);
+    if (!force && isEmptyInitialSupabaseContent(content)) {
+      if (!localRaw) setLocalContent(getDashboardContent());
+      pendingLocalChanges = true;
+      requiresConflictResolution = true;
+      updateAdminOverview();
+      showDashboardStatus('قاعدة البيانات تحتوي سجل التهيئة الفارغ فقط. احتُفظ بمحتوى المشروع المحلي؛ راجعه ثم اضغط «مزامنة التعديلات المحلية» لنشره بعد التأكيد.', true);
+      return false;
+    }
+    const localContent = localRaw ? JSON.stringify(JSON.parse(localRaw)) : null;
+    const remoteContent = JSON.stringify(content);
+    if (!force && localContent && syncedRaw && localContent !== syncedRaw) {
+      pendingLocalChanges = true;
+      requiresConflictResolution = true;
+      updateAdminOverview();
+      showDashboardStatus('توجد تعديلات محلية غير متزامنة؛ احتُفظ بها. اختر المزامنة المحلية أو تحميل أحدث نسخة بعد مراجعة التعارض.', true);
+      return false;
+    }
+    if (!force && localContent && !syncedRaw && localContent !== remoteContent) {
+      pendingLocalChanges = true;
+      requiresConflictResolution = true;
+      updateAdminOverview();
+      showDashboardStatus('عُثر على بيانات محلية قديمة غير مؤرخة. احتُفظ بها؛ راجعها ثم اختر المزامنة أو تحميل بيانات Supabase.', true);
+      return false;
+    }
+    applyDashboardContent(content);
+    setLocalContent(content);
+    localStorage.setItem(SYNCED_STORAGE_KEY, remoteContent);
+    pendingLocalChanges = false;
+    requiresConflictResolution = false;
+    refreshAdminUi();
+    window.dispatchEvent(new Event('nabniha-dashboard-content-updated'));
+    return true;
+  };
+  const loadSupabaseContent = async ({ force = false } = {}) => {
+    if (!supabaseClient) throw new Error('عميل Supabase غير مهيأ.');
+    const { data, error } = await supabaseClient.from('site_content')
+      .select('content,updated_at').eq('id', 1).maybeSingle();
+    if (error) {
+      databaseConnectionVerified = false;
+      throw error;
+    }
+    databaseConnectionVerified = true;
+    if (!data) {
+      lastKnownRemoteUpdatedAt = null;
+      if (localStorage.getItem(STORAGE_KEY)) {
+        pendingLocalChanges = true;
+        requiresConflictResolution = true;
+        updateAdminOverview();
+        showDashboardStatus('لا يوجد سجل id=1 في Supabase. احتُفظ بالمحتوى المحلي ويمكن نشره بحساب مسؤول معتمد.', true);
+      } else {
+        setSupabaseAuthStatus('اتصال Supabase ناجح، لكن سجل المحتوى id=1 غير موجود.');
+      }
+      return false;
+    }
+    lastKnownRemoteUpdatedAt = data.updated_at;
+    return refreshAdminFromRemote(data.content, force);
   };
   const publishLocalContent = async () => {
-    const content = { siteText, contactLinks, contactChannels, candidates: candidateData, program: programData, news: newsData };
-    const { error } = await supabaseClient.from('site_content').upsert({ id: 1, content }, { onConflict: 'id' });
+    if (!isSupabaseAdmin) throw new Error('الحساب ليس مسؤولًا معتمدًا في site_admins.');
+    const { data, error } = await supabaseClient.from('site_content')
+      .select('updated_at').eq('id', 1).maybeSingle();
     if (error) throw error;
-    showDashboardStatus('تم نشر المحتوى المحلي ومزامنته مع Supabase.');
+    lastKnownRemoteUpdatedAt = data ? data.updated_at : null;
+    return saveDashboardState();
   };
 
+  setAdminEditingEnabled(false);
   if (!supabaseClient) {
     setSupabaseAuthStatus('تعذر تهيئة Supabase. تحقق من ملف supabase-config.js واتصال الإنترنت.');
+    if (adminStorageIndicator) adminStorageIndicator.textContent = 'تعذر الاتصال بـ Supabase';
   } else {
+    let authCheckId = 0;
+    const verifyAdminSession = async session => {
+      const currentCheck = ++authCheckId;
+      supabaseSession = session || null;
+      isSupabaseAdmin = false;
+      adminReadyForEditing = false;
+      setAdminEditingEnabled(false);
+      const authenticated = Boolean(supabaseSession?.user);
+      supabaseSignOut.classList.toggle('hidden', !authenticated);
+      supabasePublishLocal.classList.toggle('hidden', !authenticated);
+      supabaseRefreshRemote.classList.toggle('hidden', !authenticated);
+      if (!authenticated) {
+        setSupabaseAuthStatus(databaseConnectionVerified
+          ? 'متصل بقاعدة البيانات بوضع القراءة العامة؛ سجّل الدخول بحساب مسؤول لإجراء التعديلات.'
+          : 'لا توجد جلسة مسؤول؛ جارٍ التحقق من اتصال قاعدة البيانات.');
+        if (adminStorageIndicator) adminStorageIndicator.textContent = 'يلزم تسجيل الدخول كمسؤول';
+        updateAdminOverview();
+        return;
+      }
+      setSupabaseAuthStatus('تم التحقق من الجلسة؛ جارٍ التحقق من صلاحية المسؤول...');
+      try {
+        const { data, error } = await supabaseClient.from('site_admins')
+          .select('user_id').eq('user_id', supabaseSession.user.id).maybeSingle();
+        if (error) throw error;
+        if (currentCheck !== authCheckId) return;
+        isSupabaseAdmin = Boolean(data && data.user_id === supabaseSession.user.id);
+        if (!isSupabaseAdmin) {
+          setSupabaseAuthStatus('تم تسجيل الدخول، لكن هذا الحساب غير معتمد كمسؤول في site_admins. التعديل والنشر ممنوعان.');
+          if (adminStorageIndicator) adminStorageIndicator.textContent = 'الحساب غير معتمد كمسؤول';
+          supabasePublishLocal.classList.add('hidden');
+          supabaseRefreshRemote.classList.add('hidden');
+          updateAdminOverview();
+          return;
+        }
+        setSupabaseAuthStatus(`تم التحقق: ${supabaseSession.user.email} — مسؤول معتمد.`);
+        if (adminStorageIndicator) adminStorageIndicator.textContent = 'مسؤول معتمد؛ المزامنة مفعّلة';
+        try {
+          await loadSupabaseContent();
+        } catch (error) {
+          console.error('تعذر تحميل المحتوى بعد التحقق من المسؤول.', error);
+          requiresConflictResolution = true;
+          setSupabaseAuthStatus('تم التحقق من المسؤول، لكن تعذر تحميل أحدث محتوى. احتُفظ بالبيانات المحلية؛ راجع الاتصال قبل الحفظ.');
+        }
+        if (currentCheck !== authCheckId || !isSupabaseAdmin) return;
+        adminReadyForEditing = true;
+        setAdminEditingEnabled(true);
+      } catch (error) {
+        if (currentCheck !== authCheckId) return;
+        console.error('تعذر التحقق من صلاحية المسؤول.', error);
+        setSupabaseAuthStatus('تعذر التحقق من صلاحية المسؤول. لا يمكن إجراء تعديلات حتى ينجح التحقق.');
+        if (adminStorageIndicator) adminStorageIndicator.textContent = 'تعذر التحقق من صلاحية المسؤول';
+        updateAdminOverview();
+      }
+    };
     $('supabaseAuthForm').addEventListener('submit', async event => {
       event.preventDefault();
       const submit = event.currentTarget.querySelector('[type="submit"]');
       submit.disabled = true;
       try {
-        const { error } = await supabaseClient.auth.signInWithPassword({
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
           email: $('supabaseEmail').value.trim(),
           password: $('supabasePassword').value
         });
         if (error) throw error;
         $('supabasePassword').value = '';
-        setSupabaseAuthStatus('تم تسجيل الدخول؛ يجري تحميل المحتوى من قاعدة البيانات.');
+        await verifyAdminSession(data.session);
       } catch (error) {
         console.error('تعذر تسجيل الدخول إلى Supabase.', error);
-        setSupabaseAuthStatus('تعذر تسجيل الدخول. تحقق من الحساب وكلمة المرور.');
+        setSupabaseAuthStatus('فشل تسجيل الدخول. تحقق من البريد وكلمة المرور واتصال الإنترنت.');
       } finally {
         submit.disabled = false;
       }
     });
     supabaseSignOut.addEventListener('click', async () => {
-      const { error } = await supabaseClient.auth.signOut();
-      if (error) {
+      try {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
+        await verifyAdminSession(null);
+      } catch (error) {
         console.error('تعذر تسجيل الخروج من Supabase.', error);
         setSupabaseAuthStatus('تعذر تسجيل الخروج من Supabase.');
       }
     });
     supabasePublishLocal.addEventListener('click', async () => {
-      if (!supabaseSession?.user) return;
-      if (!window.confirm('سيتم استبدال محتوى Supabase بالمحتوى الموجود في هذا المتصفح. هل تريد المتابعة؟')) return;
+      if (!isSupabaseAdmin || !adminReadyForEditing) return;
+      if (!window.confirm('سيتم نشر المحتوى المحلي واستبدال محتوى site_content الحالي في Supabase. لا يمكن التراجع تلقائيًا. هل تريد المتابعة؟')) return;
       try {
+        requiresConflictResolution = false;
         await publishLocalContent();
       } catch (error) {
         console.error('تعذر نشر المحتوى المحلي إلى Supabase.', error);
-        showDashboardStatus('تعذر النشر. تأكد من إضافة حسابك إلى جدول site_admins.', true);
+        requiresConflictResolution = true;
+        updateAdminOverview();
+        showDashboardStatus(`فشلت المزامنة؛ لم يُستبدل المحتوى البعيد. ${getReadableSupabaseError(error)}`, true);
+      }
+    });
+    supabaseRefreshRemote.addEventListener('click', async () => {
+      if (!isSupabaseAdmin || !adminReadyForEditing) return;
+      if (pendingLocalChanges && !window.confirm('سيتم استبدال التعديلات المحلية غير المتزامنة بأحدث محتوى من Supabase. هل تريد المتابعة؟')) return;
+      try {
+        const loaded = await loadSupabaseContent({ force: true });
+        if (loaded) showDashboardStatus('تم تحميل أحدث محتوى من Supabase.');
+        else showDashboardStatus('لا يوجد سجل محتوى id=1 في Supabase.', true);
+      } catch (error) {
+        console.error('تعذر تحميل محتوى Supabase.', error);
+        showDashboardStatus(`تعذر تحميل المحتوى من Supabase. ${getReadableSupabaseError(error)}`, true);
       }
     });
     supabaseClient.auth.onAuthStateChange((_event, session) => {
       setTimeout(() => {
-        supabaseSession = session;
-        const authenticated = Boolean(session?.user);
-        supabaseSignOut.classList.toggle('hidden', !authenticated);
-        supabasePublishLocal.classList.toggle('hidden', !authenticated);
-        setSupabaseAuthStatus(authenticated
-          ? `تم تسجيل الدخول: ${session.user.email}`
-          : 'متصل بقاعدة البيانات بوضع القراءة العامة. سجّل الدخول لإدارة المحتوى.');
-        if (authenticated) loadSupabaseContent().catch(error => {
-          console.error('تعذر تحميل المحتوى من Supabase بعد تسجيل الدخول.', error);
-          setSupabaseAuthStatus('تعذر تحميل المحتوى. تحقق من إعداد قاعدة البيانات.');
-        });
+        verifyAdminSession(session);
       }, 0);
     });
     supabaseClient.auth.getSession().then(({ data, error }) => {
       if (error) throw error;
-      supabaseSession = data.session;
+      return verifyAdminSession(data.session);
     }).catch(error => {
       console.error('تعذر استعادة جلسة Supabase.', error);
       setSupabaseAuthStatus('تعذر التحقق من جلسة Supabase.');
+      if (adminStorageIndicator) adminStorageIndicator.textContent = 'تعذر استعادة جلسة المسؤول';
     });
-    loadSupabaseContent().then(hasContent => {
-      if (!hasContent) setSupabaseAuthStatus('قاعدة البيانات جاهزة، لكن لم يُنشر فيها محتوى بعد.');
-    }).catch(error => {
+    loadSupabaseContent().catch(error => {
       console.error('تعذر تحميل المحتوى من Supabase.', error);
       setSupabaseAuthStatus('تعذر الاتصال. شغّل supabase-setup.sql في SQL Editor وتحقق من الاتصال.');
+      if (adminStorageIndicator) adminStorageIndicator.textContent = 'تعذر الاتصال بـ Supabase';
     });
+    window.addEventListener('nabniha-dashboard-content-updated', refreshAdminUi);
   }
 }
 
