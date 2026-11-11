@@ -153,8 +153,9 @@
     .candidate-slide, .candidate-slider-controls button { transition: none !important; animation: none !important; }
   }
 body > header, body > footer { display:none !important; } #app > section:not(#view-admin) { display:none !important; } #view-admin { display:block !important; opacity:1 !important; transform:none !important; } 
+body.admin-auth-locked > #adminSettingsNav, body.admin-auth-locked > #adminSidebarToggle, body.admin-auth-locked > #app { display:none !important; }
   body { background:#f1f5f9; }
-  .admin-sidebar { position:fixed; z-index:60; inset:0 auto 0 0; right:0; width:258px; min-height:100vh; padding:22px 15px; display:flex; flex-direction:column; gap:6px; color:#e2e8f0; background:linear-gradient(180deg,#0b1528 0%,#101d35 100%); box-shadow:-8px 0 30px rgba(15,23,42,.12); overflow-y:auto; }
+  .admin-sidebar { position:fixed; z-index:60; inset:0 auto 0 0; right:0; width:285px; min-height:100vh; padding:22px 15px; display:flex; flex-direction:column; gap:6px; color:#e2e8f0; background:linear-gradient(180deg,#0b1528 0%,#101d35 100%); box-shadow:-8px 0 30px rgba(15,23,42,.12); overflow-y:auto; }
   .admin-sidebar-brand { display:flex; align-items:center; gap:12px; padding:7px 9px 22px; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,.1); }
   .admin-brand-mark { width:43px;height:43px;border-radius:14px;display:grid;place-items:center;font-size:23px;font-weight:900;color:#fff;background:linear-gradient(135deg,#16a34a,#d97706); }
   .admin-sidebar-brand strong { display:block;color:#fff;font-size:15px;font-weight:900; }
@@ -166,9 +167,12 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
   .admin-nav-link[aria-current="location"] i,.admin-nav-link:hover i { color:#fbbf24; }
   .admin-public-link { margin-top:3px;border:1px solid rgba(251,191,36,.2);color:#fcd34d; }
   .admin-sidebar-caption-bottom { margin-top:13px; }
+  .admin-sidebar-account { margin-top:12px;padding:14px 8px 0;border-top:1px solid rgba(255,255,255,.1);display:grid;gap:9px; }
+  .admin-sidebar-account #adminAuthSummary { color:#e2e8f0;font-size:11px;font-weight:800;line-height:1.6;overflow-wrap:anywhere; }
+  .admin-sidebar-account .admin-secondary { width:100%;padding:9px 10px;text-align:center;font-size:11px;line-height:1.5; }
   .admin-sidebar-footer { margin-top:auto;padding:18px 10px 4px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:#94a3b8; }
   .admin-online-dot { display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-left:5px;box-shadow:0 0 0 4px rgba(34,197,94,.12); }
-  #app { margin-right:258px;min-width:0; }
+  #app { margin-right:285px;min-width:0; }
   .admin-sidebar-toggle { display:none; }
   .admin-overview-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px; }
   .admin-stat-card { background:#fff;border:1px solid #e2e8f0;border-radius:17px;padding:18px;box-shadow:0 4px 14px rgba(15,23,42,.035); }
@@ -184,12 +188,39 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
 
 </style>
 </head>
-<body class="min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+<body class="min-h-screen flex flex-col selection:bg-brand-500 selection:text-white admin-auth-locked">
+<div id="adminLoginGate" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="adminLoginTitle">
+  <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
+    <div class="mb-6 text-center">
+      <div class="admin-brand-mark mx-auto">ن</div>
+      <h1 id="adminLoginTitle" class="mt-4 text-2xl font-black text-slate-900">تسجيل الدخول إلى لوحة التحكم</h1>
+      <p class="mt-2 text-sm text-slate-500">أدخل بيانات حساب مسؤول معتمد لفتح لوحة الإدارة.</p>
+    </div>
+    <p id="supabaseAuthStatus" class="mb-4 rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-700" role="status" aria-live="polite">جارٍ التحقق من جلسة Supabase...</p>
+    <form id="supabaseAuthForm" class="grid grid-cols-1 gap-3">
+      <label class="text-sm font-bold text-slate-700">البريد الإلكتروني
+        <input id="supabaseEmail" type="email" autocomplete="username" required class="admin-field mt-1" placeholder="البريد الإلكتروني لحساب الإدارة">
+      </label>
+      <label class="text-sm font-bold text-slate-700">كلمة المرور
+        <input id="supabasePassword" type="password" autocomplete="current-password" required class="admin-field mt-1" placeholder="كلمة المرور">
+      </label>
+      <div class="mt-2 flex flex-wrap justify-center gap-2">
+        <button type="submit" class="admin-primary w-full">دخول إلى لوحة التحكم</button>
+        <button type="button" id="supabaseSignOutGate" class="admin-secondary hidden">تسجيل الخروج من هذا الحساب</button>
+        <a href="index.html" class="admin-secondary text-center">العودة إلى الموقع</a>
+      </div>
+    </form>
+    <p class="mt-4 text-center text-xs text-slate-500">يجب أن يكون الحساب مسجلًا في جدول <code>site_admins</code>.</p>
+  </div>
+</div>
 <button id="adminSidebarToggle" class="admin-sidebar-toggle" type="button" aria-label="فتح قائمة لوحة التحكم" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
 <nav id="adminSettingsNav" aria-label="التنقل بين أقسام لوحة التحكم" class="admin-sidebar">
   <div class="admin-sidebar-brand">
     <div class="admin-brand-mark">ن</div>
     <div><strong>نبنيها معًا</strong><span>مركز إدارة المنصة</span></div>
+  </div>
+  <div class="admin-sidebar-account" aria-label="حساب المسؤول والمزامنة">
+    <span id="adminAuthSummary" role="status" aria-live="polite">جارٍ التحقق من المسؤول...</span>
   </div>
   <div class="admin-sidebar-caption">القائمة الرئيسية</div>
   <a href="#admin-overview" class="admin-nav-link" aria-current="location"><i class="fa-solid fa-chart-pie"></i><span>لوحة المعلومات</span></a>
@@ -208,18 +239,22 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
 </nav>
 <main id="app" class="flex-1">
 <section id="view-admin" class="view-pane">
-    <div class="bg-slate-900 text-white py-12 pattern-grid border-b border-white/10">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <a href="index.html" class="inline-flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white mb-5"><i class="fa-solid fa-arrow-right"></i>العودة إلى صفحة العرض</a>
-        <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">إدارة محتوى الموقع</span>
-        <h1 class="text-3xl sm:text-4xl font-black mt-3">لوحة <span class="text-brand-500">التحكم</span></h1>
-        <p class="text-slate-300 text-sm mt-2">حدّث النصوص والمترشحين ومحاور البرنامج والأخبار، ثم احفظ التغييرات.</p>
+    <div class="bg-slate-900 text-white py-3 pattern-grid border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <a href="index.html" class="inline-flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-right"></i>العودة إلى صفحة العرض</a>
+          <span class="text-xs font-bold text-gold-400 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">إدارة محتوى الموقع</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="supabaseSignOut" class="admin-secondary hidden text-xs">تسجيل الخروج</button>
+          <button type="button" id="supabasePublishLocal" class="admin-secondary hidden text-xs">نشر التعديلات المحلية غير المتزامنة</button>
+          <button type="button" id="supabaseRefreshRemote" class="admin-secondary hidden text-xs">تحميل أحدث بيانات قاعدة البيانات</button>
+        </div>
       </div>
     </div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
-      <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-        <p><i class="fa-solid fa-circle-info ml-2"></i>تُزامَن التغييرات مع Supabase بعد تسجيل الدخول بحساب مسؤول معتمد. لا يعني ظهور التعديل في المعاينة أنه نُشر؛ انتظر رسالة تأكيد المزامنة.</p>
-        <p id="supabaseSyncGuidance" class="mt-2 font-bold" role="status" aria-live="polite">جارٍ التحقق من محتوى قاعدة البيانات...</p>
+      <div id="supabaseSyncGuidancePanel" class="hidden rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+        <p id="supabaseSyncGuidance" class="font-bold" role="status" aria-live="polite"></p>
       </div>
       <div id="adminStatus" class="hidden rounded-xl p-3 text-sm font-bold" role="status" aria-live="polite"></div>
 
@@ -231,7 +266,7 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
         <div class="admin-overview-grid">
           <article class="admin-stat-card"><div class="admin-stat-icon"><i class="fa-solid fa-users"></i></div><div id="overviewCandidateCount" class="admin-stat-value">—</div><div class="admin-stat-label">المترشحون</div></article>
           <article class="admin-stat-card"><div class="admin-stat-icon" style="background:#eff6ff;color:#2563eb"><i class="fa-solid fa-layer-group"></i></div><div id="overviewProgramCount" class="admin-stat-value">—</div><div class="admin-stat-label">محاور البرنامج</div></article>
-          <article class="admin-stat-card"><div class="admin-stat-icon" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-list-check"></i></div><div id="overviewCommitmentCount" class="admin-stat-value">—</div><div class="admin-stat-label">الالتزامات</div></article>
+          <article class="admin-stat-card"><div class="admin-stat-icon" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-list-check"></i></div><div id="overviewCommitmentCount" class="admin-stat-value">—</div><div class="admin-stat-label">نقاط البرنامج</div></article>
           <article class="admin-stat-card"><div class="admin-stat-icon" style="background:#fdf2f8;color:#be185d"><i class="fa-solid fa-newspaper"></i></div><div id="overviewNewsCount" class="admin-stat-value">—</div><div class="admin-stat-label">الأخبار المنشورة</div></article>
         </div>
         <div class="mt-5 bg-white rounded-2xl border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-3">
@@ -298,7 +333,7 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
 
       <section id="admin-program" data-admin-panels="program priorities" class="admin-settings-section scroll-mt-24 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" hidden>
         <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-          <div><h2 class="text-xl font-black text-slate-900">البرنامج الانتخابي</h2><p class="text-xs text-slate-500 mt-1">عدّل عناوين المحاور والتزامات مراحل التنفيذ أو أضف محورًا.</p></div>
+          <div><h2 class="text-xl font-black text-slate-900">البرنامج الانتخابي</h2><p class="text-xs text-slate-500 mt-1">عدّل ملخص المحاور ومشاريع مراحل التنفيذ أو أضف محورًا.</p></div>
           <button type="button" id="programNewBtn" class="admin-secondary"><i class="fa-solid fa-plus ml-2"></i>إضافة محور</button>
         </div>
         <form id="programForm" novalidate class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -317,9 +352,9 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
               <div id="adminProgramCoverPreview" class="relative h-48 max-w-sm overflow-hidden rounded-2xl bg-slate-800 border border-slate-200" aria-live="polite"></div>
             </div>
           </div>
-          <label id="admin-priorities" data-admin-panel="priorities" class="text-sm font-bold text-slate-700">قريب — السنة الأولى<textarea id="adminPhaseNear" rows="7" class="admin-field mt-1" placeholder="التزام واحد في كل سطر"></textarea></label>
-          <label data-admin-panel="program" class="text-sm font-bold text-slate-700">متوسط — السنتان الثانية والثالثة<textarea id="adminPhaseMid" rows="7" class="admin-field mt-1" placeholder="التزام واحد في كل سطر"></textarea></label>
-          <label data-admin-panel="program" class="text-sm font-bold text-slate-700">بعيد — السنتان الرابعة والخامسة<textarea id="adminPhaseFar" rows="7" class="admin-field mt-1" placeholder="التزام واحد في كل سطر"></textarea></label>
+          <label id="admin-priorities" data-admin-panel="priorities" class="text-sm font-bold text-slate-700">قريب — السنة الأولى<textarea id="adminPhaseNear" rows="7" class="admin-field mt-1" placeholder="نقطة موجزة في كل سطر"></textarea></label>
+          <label data-admin-panel="program" class="text-sm font-bold text-slate-700">متوسط — السنتان الثانية والثالثة<textarea id="adminPhaseMid" rows="7" class="admin-field mt-1" placeholder="نقطة موجزة في كل سطر"></textarea></label>
+          <label data-admin-panel="program" class="text-sm font-bold text-slate-700">بعيد — السنتان الرابعة والخامسة<textarea id="adminPhaseFar" rows="7" class="admin-field mt-1" placeholder="نقطة موجزة في كل سطر"></textarea></label>
           <div data-admin-panel="program priorities" class="md:col-span-2 flex flex-wrap gap-2"><button type="submit" class="admin-primary">حفظ المحور</button><button type="button" id="programDeleteBtn" class="admin-danger">حذف المحور المحدد</button></div>
         </form>
       </section>
@@ -349,22 +384,6 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
       <section id="admin-backup" data-admin-panel="backup" class="admin-settings-section scroll-mt-24 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" hidden>
         <h2 class="text-xl font-black text-slate-900 mb-2"><i class="fa-solid fa-box-archive text-brand-600 ml-2"></i>النسخ الاحتياطي والاستعادة</h2>
         <p class="text-sm text-slate-500 mb-5">احتفظ بنسخة من النصوص والمترشحين ومحاور البرنامج والأخبار. الاستعادة تستبدل البيانات الحالية بعد تأكيدك.</p>
-        <div class="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div><h3 class="font-black text-slate-900">قاعدة بيانات Supabase</h3><p id="supabaseAuthStatus" class="mt-1 text-xs text-slate-600">جارٍ الاتصال بقاعدة البيانات...</p></div>
-            <button type="button" id="supabaseSignOut" class="admin-secondary hidden">تسجيل الخروج</button>
-          </div>
-          <form id="supabaseAuthForm" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input id="supabaseEmail" type="email" autocomplete="username" required class="admin-field" placeholder="البريد الإلكتروني لحساب الإدارة">
-            <input id="supabasePassword" type="password" autocomplete="current-password" required class="admin-field" placeholder="كلمة المرور">
-            <div class="sm:col-span-2 flex flex-wrap items-center gap-2">
-              <button type="submit" class="admin-primary">تسجيل الدخول إلى Supabase</button>
-              <button type="button" id="supabasePublishLocal" class="admin-secondary hidden">مزامنة التعديلات المحلية إلى قاعدة البيانات</button>
-              <button type="button" id="supabaseRefreshRemote" class="admin-secondary hidden">تحميل أحدث بيانات قاعدة البيانات</button>
-            </div>
-          </form>
-          <p class="mt-3 text-xs text-slate-500">أنشئ حساب الإدارة في Supabase Auth، ثم أضف معرّف المستخدم إلى جدول site_admins باستخدام ملف الإعداد.</p>
-        </div>
         <div class="flex flex-wrap gap-2">
           <button type="button" id="exportBackupBtn" class="admin-tool-btn admin-tool-primary"><i class="fa-solid fa-file-export"></i> تصدير نسخة JSON</button>
           <label for="importBackupFile" class="admin-tool-btn admin-tool-light cursor-pointer"><i class="fa-solid fa-file-import"></i> استيراد نسخة احتياطية</label>
@@ -381,37 +400,43 @@ body > header, body > footer { display:none !important; } #app > section:not(#vi
 (function(){
 'use strict';
 
-/* البرنامج الانتخابي 2026–2031: المحاور السبعة المفصلة في الوثيقة */
-const programData = [
+/* ملخص المحاور ومشاريعها بحسب وثيقة البرنامج الانتخابي 2026–2031 */
+const defaultProgramData = [
   { ico:'fa-solid fa-road', photo:'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=700&q=80', title:'التهيئة الحضرية والبنية التحتية والطرق والإنارة', phases:{
-    'قريب — السنة 1':['تشخيص شامل للطرق والأرصفة والإنارة','معالجة الحفر والنقاط السوداء','إصلاح الإنارة','إزالة الردوم','تأهيل الأرصفة بمحيط المدارس والمساجد','إنشاء قاعدة بيانات رقمية','تهيئة المداخل','إعداد برنامج صيانة سنوي'],
-    'متوسط — السنتان 2–3':['تعميم الإنارة ومصابيح LED','إنشاء أرصفة وممرات آمنة','تهيئة مواقف سيارات','إنشاء ساحات عمومية ومساحات خضراء','استكمال الصرف الصحي والمياه','تهيئة الأحياء القديمة','تسمية الشوارع وترقيم المباني'],
-    'بعيد — السنتان 4–5':['تعبيد الطرق','فتح طرق جديدة','إنارة ذكية','تركيب كاميرات مراقبة','تنفيذ برنامج «حي نموذجي»','وضع مخطط صيانة وقائية','إصدار تقارير نصف سنوية'] } },
-  { ico:'fa-solid fa-leaf', photo:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=700&q=80', title:'الصحة العمومية والوقاية والبيئة والنظافة', phases:{
-    'قريب — السنة 1':['إعداد مخطط بلدي للنظافة','إطلاق برنامج دائم للنظافة في كل الأحياء','دعم وسائل الجمع','إزالة المفارغ العشوائية','تنظيم حملات نظافة شهرية','مكافحة الحشرات والقوارض والحيوانات الضالة','تنظيف المقبرة','تشكيل فرق تدخل سريع'],
-    'متوسط — السنتان 2–3':['زيادة المساحات الخضراء','إطلاق مبادرة «شجرة لكل أسرة»','تهيئة الحدائق','إنشاء فضاءات لعب آمنة','فرز النفايات وإعادة التدوير','تنظيم مسابقات أجمل حي','تنظيم أيام فحص طبي وحملات تلقيح'],
-    'بعيد — السنتان 4–5':['إعداد مخطط بيئي طويل المدى','التوجه نحو الطاقات النظيفة','رقمنة قطاع النظافة','إنشاء قاعدة بيانات بيئية','دعم الاقتصاد الأخضر','إصدار تقرير بيئي سنوي'] } },
-  { ico:'fa-solid fa-briefcase', photo:'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=700&q=80', title:'التشغيل والتنمية المحلية والاستثمار', phases:{
-    'قريب — السنة 1':['إعداد خريطة اقتصادية','فتح شباك استقبال المستثمرين','إعداد دليل استثماري','جرد العقارات القابلة للاستثمار','تنظيم لقاءات مع التجار والفلاحين','تبسيط الإجراءات','التنسيق مع أجهزة دعم التشغيل'],
-    'متوسط — السنتان 2–3':['تهيئة فضاءات للأنشطة الاقتصادية','تنظيم معارض للمنتجات المحلية','دعم الحرفيين والمبادرات النسوية','ربط التكوين بسوق العمل','دعم التعاونيات المحلية','تنمية الاقتصاد الرقمي والأخضر'],
-    'بعيد — السنتان 4–5':['إعداد رؤية اقتصادية طويلة المدى','إنشاء منطقة نشاطات','استقطاب استثمارات','دعم الاقتصاد الدائري','تطوير السياحة المحلية','إصدار تقرير اقتصادي سنوي'] } },
+    'قريب — السنة 1':['إصلاح الحفر والإنارة، وتأهيل الأرصفة ومداخل البلدية، وتحسين تصريف مياه الأمطار.'],
+    'متوسط — السنتان 2–3':['استكمال الإنارة والصرف الصحي، وتهيئة الأرصفة والساحات والأحياء والأسواق.'],
+    'بعيد — السنتان 4–5':['تعبيد وفتح الطرق، وتطوير فضاءات الأحياء، وإطلاق «حي نموذجي» مع اعتماد الصيانة الوقائية.'] } },
+  { ico:'fa-solid fa-leaf', photo:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=700&q=80', title:'الصحة العمومية والوقاية والبيئة والنظافة وجودة الحياة', phases:{
+    'قريب — السنة 1':['إعداد مخطط للنظافة والبيئة، ودعم جمع النفايات، وإزالة المفارغ وتنظيف المجاري ومكافحة الآفات.'],
+    'متوسط — السنتان 2–3':['توسيع المساحات الخضراء والتشجير، وتهيئة الحدائق وفضاءات اللعب، ودعم التلقيح والوقاية.'],
+    'بعيد — السنتان 4–5':['إدماج البعد البيئي في التهيئة، ودعم الاقتصاد الأخضر، ونشر تقارير عن النتائج.'] } },
+  { ico:'fa-solid fa-briefcase', photo:'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=700&q=80', title:'التشغيل والتنمية المحلية والاستثمار وترقية الاقتصاد المحلي', phases:{
+    'قريب — السنة 1':['إعداد خريطة ودليل استثماري، واستقبال المستثمرين، وجرد العقارات وتسهيل الإجراءات والتوجيه نحو فرص التشغيل.'],
+    'متوسط — السنتان 2–3':['تهيئة فضاءات اقتصادية، وتنظيم معارض محلية، ودعم الحرف والأسر المنتجة والتعاونيات وربط التكوين بسوق العمل.'],
+    'بعيد — السنتان 4–5':['تفعيل منطقة النشاطات عند توفر الشروط، واستقطاب استثمارات وفرص عمل، وتنمية السياحة المحلية.'] } },
   { ico:'fa-solid fa-school', photo:'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=700&q=80', title:'التربية والتعليم والتكوين ورعاية الطفولة والمدارس القرآنية', phases:{
-    'قريب — السنة 1':['تشخيص المدارس الابتدائية','تنفيذ صيانة سنوية قبل الدخول المدرسي','تحسين الإطعام والتدفئة والمرافق الصحية','إنشاء ممرات آمنة','تحسين النقل المدرسي','تكريم المتفوقين','إطلاق جائزة البلدية للتميز ولحفظة القرآن','تنظيم يوم للمعلم'],
-    'متوسط — السنتان 2–3':['إنشاء مدارس جديدة وتوسعة القائم للحد من الاكتظاظ','تهيئة ساحات رياضية وفضاءات خضراء','دعم المدارس القرآنية ومسابقات الحفظ','تنظيم مخيمات صيفية','إنشاء نوادٍ للقراءة ومعارض كتاب','تنظيم أيام إعلامية للتكوين المهني'],
-    'بعيد — السنتان 4–5':['إنشاء مجمعات مدرسية','إنشاء مكتبات جوارية','إطلاق مبادرة «مدرسة خضراء»','إصدار تقارير سنوية وإجراء تقييم دوري'] } },
-  { ico:'fa-solid fa-futbol', photo:'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80', title:'الشباب والرياضة والثقافة والحياة الجمعوية', phases:{
-    'قريب — السنة 1':['جرد المرافق','صيانة الملاعب الجوارية وإنارتها','إعداد رزنامة سنوية للأنشطة','تنظيم دورات رياضية بين الأحياء','دعم الجمعيات بمعايير شفافة','توفير فضاءات مجانية','تنظيم «يوم مع الشباب»','إطلاق جائزة الإبداع الشبابي','تكريم الرياضيين'],
-    'متوسط — السنتان 2–3':['إنشاء ملاعب جديدة','إنشاء قاعات متعددة النشاطات','تهيئة فضاءات للأطفال','إنشاء نوادٍ للمطالعة والروبوتيك','تشكيل مجلس استشاري للشباب','تنظيم ملتقى ومعرض سنوي','دعم رياضة المرأة وذوي الاحتياجات الخاصة','التوعية بمخاطر المخدرات','إطلاق مبادرة «حي نشيط»'],
-    'بعيد — السنتان 4–5':['إنشاء مركب رياضي وثقافي','إطلاق جائزة العمل التطوعي','إنشاء مكتبة عصرية','إدماج الأنشطة في الفعاليات السياحية','إصدار تقرير سنوي'] } },
+    'قريب — السنة 1':['تشخيص المدارس وصيانتها، وتحسين الإطعام والتدفئة والمرافق، وتأمين محيط المدارس والنقل المدرسي.'],
+    'متوسط — السنتان 2–3':['دعم المدارس والأنشطة القرآنية، وتكريم المتفوقين والمعلمين، وتنمية القراءة والتوجيه والتكوين.'],
+    'بعيد — السنتان 4–5':['السعي لإنجاز مجمعات مدرسية ومكتبات جوارية، وإطلاق «مدرسة خضراء»، وتقييم تنفيذ الالتزامات.'] } },
+  { ico:'fa-solid fa-futbol', photo:'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80', title:'الشباب والرياضة والثقافة والحياة الجمعوية والترفيه', phases:{
+    'قريب — السنة 1':['جرد وصيانة المرافق الرياضية والثقافية، وتنظيم أنشطة بين الأحياء، ودعم الجمعيات والمواهب الشابة.'],
+    'متوسط — السنتان 2–3':['تطوير الملاعب والقاعات والفضاءات، وإشراك الشباب، ودعم الرياضة والثقافة والتوعية المجتمعية.'],
+    'بعيد — السنتان 4–5':['دعم التطوع والمكتبة، وربط الثقافة والرياضة بالسياحة، ونشر تقييم سنوي للنتائج.'] } },
   { ico:'fa-solid fa-hand-holding-heart', photo:'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=700&q=80', title:'التضامن الاجتماعي والأسرة وذوو الاحتياجات الخاصة وكبار السن', phases:{
-    'قريب — السنة 1':['إنشاء قاعدة بيانات اجتماعية','فتح شباك استقبال وتوجيه','اعتماد معايير شفافة للمساعدات','تنظيم حملات رمضان والأعياد والدخول المدرسي','تنظيم حملات للتبرع بالدم','تهيئة المرافق لذوي الاحتياجات الخاصة','تكريم كبار السن','إنشاء سجل للجمعيات الاجتماعية','التنسيق مع الهلال الأحمر'],
-    'متوسط — السنتان 2–3':['مواصلة تهيئة المرافق','إنشاء فضاءات ترفيهية لذوي الاحتياجات الخاصة','تنظيم ملتقى للعمل الاجتماعي','دعم كفالة الأيتام','دعم الصحة النفسية','مكافحة الإدمان والعنف الأسري','تنظيم قوافل تضامنية','إبرام اتفاقيات مع الجمعيات'],
-    'بعيد — السنتان 4–5':['إنشاء مركز متعدد الخدمات الاجتماعية','إنشاء منصة إلكترونية للتطوع','إعداد دليل للجمعيات','تشكيل مجلس استشاري اجتماعي','إطلاق جائزة العمل الإنساني','إصدار تقرير اجتماعي سنوي'] } },
+    'قريب — السنة 1':['تحديث بيانات الأسر المحتاجة، وشفافية المساعدات، واستقبال الفئات الهشة، وتيسير وصول ذوي الاحتياجات الخاصة.'],
+    'متوسط — السنتان 2–3':['دعم كفالة الأيتام والمبادرات النسوية، والصحة النفسية، والإدماج والشراكات الاجتماعية.'],
+    'بعيد — السنتان 4–5':['إعداد دليل ومجلس استشاري للجمعيات، ودعم التطوع، وتقييم البرامج وتعزيز المسؤولية المجتمعية.'] } },
   { ico:'fa-solid fa-laptop', photo:'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=700&q=80', title:'الحوكمة المحلية والرقمنة والشفافية وجودة الخدمة العمومية', phases:{
-    'قريب — السنة 1':['إطلاق منصة إلكترونية رسمية','إطلاق تطبيق هاتفي','إنشاء منصة «انشغالاتي» مع رقم تتبع','إنشاء لوحة متابعة إلكترونية','فتح مكتب موحد للاستقبال','إعداد ميثاق لجودة الاستقبال','إعداد دليل الخدمات','إنشاء أرشيف إلكتروني','تخصيص يوم استقبال أسبوعي','إطلاق صفحات رسمية على التواصل الاجتماعي','تكوين الموظفين'],
-    'متوسط — السنتان 2–3':['إتاحة حجز المواعيد إلكترونيًا','نشر برنامج الأشغال والميزانية المبسطة','إنشاء لوحة قيادة بمؤشرات الأداء','إنشاء فضاء إلكتروني للجمعيات','تنظيم لقاءات تشاورية','إجراء استطلاعات رضا','رقمنة متابعة المشاريع','تكريم الموظفين المتميزين','اعتماد مؤشرات زمنية لمعالجة الملفات'],
-    'بعيد — السنتان 4–5':['مواكبة التحول الرقمي الوطني','إصدار تقرير سنوي شامل عن تنفيذ البرنامج','إصدار تقرير أداء المجلس','إتاحة المتابعة الرقمية للمداولات','إصدار تقرير ختامي يقارن الالتزامات بالإنجاز'] } }
-].map(item => ({ ...item, points: Object.values(item.phases).flat() }));
+    'قريب — السنة 1':['إطلاق منصة وقنوات رقمية للشكاوى، وتطوير الاستقبال والأرشيف الإلكتروني، وتدريب الموظفين.'],
+    'متوسط — السنتان 2–3':['توسيع الخدمات الرقمية وحجز المواعيد، ونشر البرامج والميزانية والحصائل، وإشراك المواطنين والجمعيات.'],
+    'بعيد — السنتان 4–5':['رقمنة المعاملات تدريجيًا، ونشر تقارير الأداء والتنفيذ، ومتابعة البرامج والمداولات بشفافية.'] } }
+];
+const cloneProgramData = items => items.map(item => ({
+  ...item,
+  phases: Object.fromEntries(Object.entries(item.phases).map(([phase, points]) => [phase, [...points]])),
+  points: Object.values(item.phases).flat()
+}));
+const programData = cloneProgramData(defaultProgramData);
 
 const ROUTES = ['home','about','candidate','program','projects','citizen','news','contact'];
 let currentRoute = 'home';
@@ -675,6 +700,8 @@ function updateAdminOverview() {
   if (indicator) indicator.textContent = pendingLocalChanges
     ? 'تعديلات محلية تنتظر المزامنة'
     : isSupabaseAdmin ? 'مسؤول معتمد؛ المزامنة مفعّلة' : 'يلزم تسجيل الدخول كمسؤول';
+  const publishLocalButton = $('supabasePublishLocal');
+  if (publishLocalButton) publishLocalButton.classList.toggle('hidden', !isSupabaseAdmin || !pendingLocalChanges);
   const date = $('backupLastDate');
   if (date) date.textContent = 'ملاحظة: أنشئ نسخة احتياطية قبل حذف بيانات المتصفح أو تغيير الجهاز.';
 }
@@ -735,7 +762,7 @@ function createProgramCard(item) {
         <i class="${item.ico}"></i>
       </div>
       <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-slate-200">
-        ${item.points.length} التزامات
+        ${item.points.length} نقاط
       </span>
     </div>
 
@@ -925,7 +952,7 @@ function renderYearOnePreviews() {
       <article class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
         <div class="flex items-start gap-3 mb-3"><span class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0"><i class="${item.ico}" aria-hidden="true"></i></span><h3 class="font-bold text-slate-900 text-sm leading-relaxed">${escapeHTML(item.title)}</h3></div>
         <ul class="space-y-1.5 text-xs text-slate-600">${(item.phases['قريب — السنة 1'] || []).slice(0, 3).map(point => `<li class="flex gap-2"><i class="fa-solid fa-check text-brand-600 mt-1" aria-hidden="true"></i><span>${escapeHTML(point)}</span></li>`).join('')}</ul>
-        <button class="mt-3 text-xs text-brand-700 font-bold hover:underline" data-program-idx="${programData.indexOf(item)}">عرض الالتزامات والآفاق</button>
+        <button class="mt-3 text-xs text-brand-700 font-bold hover:underline" data-program-idx="${programData.indexOf(item)}">عرض الملخص والآفاق</button>
       </article>`).join('');
     projectsGrid.querySelectorAll('[data-program-idx]').forEach(button => button.addEventListener('click', () => openModal(programData[+button.dataset.programIdx])));
   }
@@ -1726,14 +1753,27 @@ function setupDashboard() {
 
   const supabaseClient = window.nabnihaSupabase;
   const supabaseAuthStatus = $('supabaseAuthStatus');
+  const adminAuthSummary = $('adminAuthSummary');
+  const adminLoginGate = $('adminLoginGate');
   const supabaseSignOut = $('supabaseSignOut');
+  const supabaseSignOutGate = $('supabaseSignOutGate');
   const supabasePublishLocal = $('supabasePublishLocal');
   const supabaseRefreshRemote = $('supabaseRefreshRemote');
   const adminStorageIndicator = $('adminStorageIndicator');
-  const setSupabaseAuthStatus = message => { if (supabaseAuthStatus) supabaseAuthStatus.textContent = message; };
+  const setSupabaseAuthStatus = message => {
+    if (supabaseAuthStatus) supabaseAuthStatus.textContent = message;
+    if (adminAuthSummary) adminAuthSummary.textContent = message;
+  };
+  const setAuthGateVisible = visible => {
+    document.body.classList.toggle('admin-auth-locked', visible);
+    adminLoginGate.classList.toggle('hidden', !visible);
+    adminLoginGate.setAttribute('aria-hidden', String(!visible));
+  };
   const setSyncGuidance = message => {
     const guidance = $('supabaseSyncGuidance');
     if (guidance) guidance.textContent = message;
+    const panel = $('supabaseSyncGuidancePanel');
+    if (panel) panel.classList.toggle('hidden', !message);
   };
   let databaseConnectionVerified = false;
   let adminReadyForEditing = false;
@@ -1787,13 +1827,20 @@ function setupDashboard() {
       showDashboardStatus('عُثر على بيانات محلية قديمة غير مؤرخة. احتُفظ بها؛ راجعها ثم اختر المزامنة أو تحميل بيانات Supabase.', true);
       return false;
     }
-    applyDashboardContent(content);
-    setLocalContent(content);
+    const hasRemoteProgram = Array.isArray(content.program) && content.program.length > 0;
+    const contentToApply = hasRemoteProgram
+      ? content
+      : { ...content, program: cloneProgramData(defaultProgramData) };
+    applyDashboardContent(contentToApply);
+    setLocalContent(contentToApply);
     localStorage.setItem(SYNCED_STORAGE_KEY, remoteContent);
-    pendingLocalChanges = false;
-    requiresConflictResolution = false;
+    pendingLocalChanges = !hasRemoteProgram;
+    requiresConflictResolution = !hasRemoteProgram;
     refreshAdminUi();
     window.dispatchEvent(new Event('nabniha-dashboard-content-updated'));
+    if (!hasRemoteProgram) {
+      showDashboardStatus('لا يوجد ملخص للبرنامج في قاعدة البيانات؛ عُرض الملخص الافتراضي محليًا. راجعه ثم اضغط «مزامنة التعديلات المحلية» لنشره بعد التأكيد.', true);
+    }
     return true;
   };
   const loadSupabaseContent = async ({ force = false } = {}) => {
@@ -1822,7 +1869,7 @@ function setupDashboard() {
     if (isEmptyInitialSupabaseContent(data.content)) {
       setSyncGuidance('قاعدة البيانات تحتوي حاليًا على سجل التهيئة الفارغ فقط؛ المحتوى الظاهر محليًا لم يُنشر. بعد تسجيل الدخول كمسؤول معتمد، راجع المحتوى ثم اضغط «مزامنة التعديلات المحلية» وأكّد استبدال محتوى Supabase.');
     } else {
-      setSyncGuidance('يوجد محتوى منشور في Supabase. سجّل الدخول كمسؤول معتمد لحفظ التعديلات؛ لن تُعلن المزامنة ناجحة إلا بعد تأكيد الكتابة.');
+      setSyncGuidance('');
     }
     return refreshAdminFromRemote(data.content, force);
   };
@@ -1838,6 +1885,7 @@ function setupDashboard() {
   setAdminEditingEnabled(false);
   if (!supabaseClient) {
     setSupabaseAuthStatus('تعذر تهيئة Supabase. تحقق من ملف supabase-config.js واتصال الإنترنت.');
+    $('supabaseAuthForm').querySelector('[type="submit"]').disabled = true;
     if (adminStorageIndicator) adminStorageIndicator.textContent = 'تعذر الاتصال بـ Supabase';
   } else {
     let authCheckId = 0;
@@ -1848,9 +1896,11 @@ function setupDashboard() {
       adminReadyForEditing = false;
       setAdminEditingEnabled(false);
       const authenticated = Boolean(supabaseSession?.user);
-      supabaseSignOut.classList.toggle('hidden', !authenticated);
-      supabasePublishLocal.classList.toggle('hidden', !authenticated);
-      supabaseRefreshRemote.classList.toggle('hidden', !authenticated);
+      setAuthGateVisible(true);
+      supabaseSignOut.classList.add('hidden');
+      supabaseSignOutGate.classList.toggle('hidden', !authenticated);
+      supabasePublishLocal.classList.add('hidden');
+      supabaseRefreshRemote.classList.add('hidden');
       if (!authenticated) {
         setSupabaseAuthStatus(databaseConnectionVerified
           ? 'متصل بقاعدة البيانات بوضع القراءة العامة؛ سجّل الدخول بحساب مسؤول لإجراء التعديلات.'
@@ -1886,6 +1936,11 @@ function setupDashboard() {
         if (currentCheck !== authCheckId || !isSupabaseAdmin) return;
         adminReadyForEditing = true;
         setAdminEditingEnabled(true);
+        supabaseSignOut.classList.remove('hidden');
+        supabaseSignOutGate.classList.add('hidden');
+        supabaseRefreshRemote.classList.remove('hidden');
+        updateAdminOverview();
+        setAuthGateVisible(false);
       } catch (error) {
         if (currentCheck !== authCheckId) return;
         console.error('تعذر التحقق من صلاحية المسؤول.', error);
@@ -1914,7 +1969,7 @@ function setupDashboard() {
         submit.disabled = false;
       }
     });
-    supabaseSignOut.addEventListener('click', async () => {
+    const signOut = async () => {
       try {
         const { error } = await supabaseClient.auth.signOut();
         if (error) throw error;
@@ -1923,7 +1978,9 @@ function setupDashboard() {
         console.error('تعذر تسجيل الخروج من Supabase.', error);
         setSupabaseAuthStatus('تعذر تسجيل الخروج من Supabase.');
       }
-    });
+    };
+    supabaseSignOut.addEventListener('click', signOut);
+    supabaseSignOutGate.addEventListener('click', signOut);
     supabasePublishLocal.addEventListener('click', async () => {
       if (!isSupabaseAdmin || !adminReadyForEditing) return;
       if (!window.confirm('سيتم نشر المحتوى المحلي واستبدال محتوى site_content الحالي في Supabase. لا يمكن التراجع تلقائيًا. هل تريد المتابعة؟')) return;
