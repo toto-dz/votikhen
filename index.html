@@ -3,7 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>إنجاز — منصة القائمة والبرنامج التنموي لبلدية الخنق</title>
+<title>معًا ننجز — منصة القائمة والبرنامج التنموي لبلدية الخنق</title>
+<meta name="description" content="البرنامج الانتخابي لبلدية الخنق 2026–2031: محاور ومشاريع وأولويات تنموية، مع مساحة للمشاركة والاقتراح.">
+<meta property="og:locale" content="ar_DZ">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://toto-dz.github.io/votikhen/">
+<meta property="og:site_name" content="معًا ننجز">
+<meta property="og:title" content="معًا ننجز — البرنامج التنموي لبلدية الخنق 2026–2031">
+<meta property="og:description" content="البرنامج الانتخابي لبلدية الخنق 2026–2031: محاور ومشاريع وأولويات تنموية، مع مساحة للمشاركة والاقتراح.">
+<meta property="og:image" content="https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&amp;fit=crop&amp;w=1200&amp;h=630&amp;q=85">
+<meta property="og:image:secure_url" content="https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&amp;fit=crop&amp;w=1200&amp;h=630&amp;q=85">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="مشهد حضري يعبر عن التنمية في بلدية الخنق">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="معًا ننجز — البرنامج التنموي لبلدية الخنق 2026–2031">
+<meta name="twitter:description" content="البرنامج الانتخابي لبلدية الخنق 2026–2031: محاور ومشاريع وأولويات تنموية، مع مساحة للمشاركة والاقتراح.">
+<meta name="twitter:image" content="https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&amp;fit=crop&amp;w=1200&amp;h=630&amp;q=85">
+<meta name="twitter:image:alt" content="مشهد حضري يعبر عن التنمية في بلدية الخنق">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -68,6 +86,15 @@
     opacity: 1;
     transform: translateY(0);
   }
+  .scroll-reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .scroll-reveal.is-scroll-visible {
+    opacity: 1;
+    transform: none;
+  }
   .glass-header {
     background: rgba(11, 21, 40, 0.88);
     backdrop-filter: blur(16px);
@@ -116,11 +143,22 @@
     -webkit-line-clamp: 5;
     overflow: hidden;
   }
+  @keyframes viewEnter {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   @keyframes candidateCardIn {
     from { opacity: 0; transform: translateX(14px); }
     to { opacity: 1; transform: translateX(0); }
   }
   .candidate-slide.is-entering { animation: candidateCardIn 220ms ease-out both; }
+  #homeYearOnePreview > *,
+  #projectsYearOneGrid > *,
+  #projectsByCategory > *,
+  #newsList > article,
+  #valuesGrid > * {
+    transition: transform 250ms ease, box-shadow 250ms ease;
+  }
   .admin-field {
     display: block;
     width: 100%;
@@ -156,8 +194,40 @@
   @media (max-width: 1023px) {
     body { padding-bottom: calc(4.25rem + env(safe-area-inset-bottom)); }
   }
+  @media (prefers-reduced-motion: no-preference) {
+    .view-pane.active { animation: viewEnter 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  }
+  @media (prefers-reduced-motion: no-preference) and (hover: hover) {
+    #homeYearOnePreview > *:hover,
+    #homeYearOnePreview > *:focus-within,
+    #projectsYearOneGrid > *:hover,
+    #projectsYearOneGrid > *:focus-within,
+    #projectsByCategory > *:hover,
+    #projectsByCategory > *:focus-within,
+    #newsList > article:hover,
+    #newsList > article:focus-within,
+    #valuesGrid > *:hover,
+    #valuesGrid > *:focus-within {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .candidate-slide, .candidate-slider-controls button { transition: none !important; animation: none !important; }
+    body { scroll-behavior: auto; }
+    .view-pane { transition: none !important; }
+    .view-pane.active,
+    .scroll-reveal,
+    .candidate-slide,
+    .candidate-slider-controls button,
+    #homeYearOnePreview > *,
+    #projectsYearOneGrid > *,
+    #projectsByCategory > *,
+    #newsList > article,
+    #valuesGrid > * {
+      transition: none !important;
+      animation: none !important;
+      transform: none !important;
+    }
   }
 </style>
 </head>
@@ -180,7 +250,7 @@
       </div>
       <div>
         <div class="flex items-center gap-2">
-          <h1 class="text-xl font-black text-white tracking-tight group-hover:text-gold-400 transition">إنجاز</h1>
+          <h1 class="text-xl font-black text-white tracking-tight group-hover:text-gold-400 transition">معًا ننجز</h1>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-500/20 text-brand-400 border border-brand-500/30">2026</span>
         </div>
       </div>
@@ -1060,13 +1130,18 @@
         </svg>
       </div>
       <div>
-        <h4 class="text-white font-bold text-base">منصة إنجاز</h4>
+        <h4 class="text-white font-bold text-base">منصة معًا ننجز</h4>
         <p class="text-xs text-slate-400">قائمة شبابية مستقلة لبلدية الخنق 2026</p>
       </div>
     </div>
+
+    <div class="flex flex-col items-center gap-2">
+      <img src="alwan.png" alt="شعار محل ألوان للطباعة والتصميم" class="w-48 sm:w-56 h-auto" loading="lazy">
+      <a href="https://toto-dz.github.io/alwan003/" target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-gold-400 hover:text-gold-300 hover:underline transition">صفحة ألوان للطباعة والتصميم</a>
+    </div>
     
     <div class="text-xs text-slate-500">
-      <p>© 2026 قائمة إنجاز — جميع الحقوق محفوظة لخدمة ساكنة الخنق.</p>
+      <p>© 2026 قائمة معًا ننجز — جميع الحقوق محفوظة لخدمة ساكنة الخنق.</p>
       <p class="text-gold-400 font-semibold mt-1">«معًا نبني بلدية أفضل وأكثر تطورًا»</p>
     </div>
   </div>
@@ -1176,6 +1251,8 @@ let newsData = [];
 const $ = id => document.getElementById(id);
 const $$ = sel => [...document.querySelectorAll(sel)];
 const counterTimers = new WeakMap();
+let scrollRevealObserver = null;
+let scrollRevealFrame = 0;
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[char]));
@@ -1267,6 +1344,7 @@ function showView(route) {
     const pane = $('view-' + r);
     if (pane) pane.classList.toggle('active', r === route);
   });
+  setupScrollReveal($('view-' + route));
   if (route === 'news') updateNewsReadMore();
 
   // Update navigation styling
@@ -1694,7 +1772,7 @@ function applySiteText() {
   $('contactDescription').textContent = siteText.contactDescription;
   renderContactChannels();
   renderCustomContactLinks();
-  document.title = `${siteText.title1} — إنجاز`;
+  document.title = `${siteText.title1} — معًا ننجز`;
 }
 
 function renderCustomContactLinks() {
@@ -1768,7 +1846,45 @@ function updateNewsReadMore() {
   });
 }
 
+function setupScrollReveal(pane) {
+  if (!pane) return;
+  const elements = pane.querySelectorAll(':scope > div, :scope > section, article, [id$="Grid"] > *');
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+    elements.forEach(element => element.classList.add('is-scroll-visible'));
+    return;
+  }
+
+  if (!scrollRevealObserver) {
+    scrollRevealObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-scroll-visible');
+        scrollRevealObserver.unobserve(entry.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -24px 0px' });
+  }
+
+  elements.forEach(element => {
+    if (element.classList.contains('is-scroll-visible')) return;
+    element.classList.add('scroll-reveal');
+    scrollRevealObserver.observe(element);
+  });
+}
+
 window.addEventListener('resize', updateNewsReadMore);
+window.addEventListener('scroll', () => {
+  if (scrollRevealFrame) return;
+  scrollRevealFrame = requestAnimationFrame(() => {
+    scrollRevealFrame = 0;
+    const activePane = document.querySelector('.view-pane.active');
+    if (!activePane) return;
+    activePane.querySelectorAll('.scroll-reveal:not(.is-scroll-visible)').forEach(element => {
+      if (element.getBoundingClientRect().top > window.innerHeight) return;
+      element.classList.add('is-scroll-visible');
+      if (scrollRevealObserver) scrollRevealObserver.unobserve(element);
+    });
+  });
+}, { passive: true });
 
 let lastAppliedRemoteContent = null;
 let lastRemoteRefreshAt = 0;
@@ -1843,6 +1959,7 @@ function refreshPublicContent() {
   setupProgramView();
   renderProjectsByCategory();
   renderNews();
+  setupScrollReveal($('view-' + currentRoute));
   const counts = {
     axisCount: programData.length,
     commitmentCount: programData.reduce((total, item) => total + item.points.length, 0),
