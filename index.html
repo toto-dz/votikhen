@@ -110,6 +110,12 @@
     background: linear-gradient(180deg, rgba(21,128,61,0.65) 0%, rgba(11,21,40,0.95) 100%);
   }
   .candidate-slide[hidden] { display: none; }
+  .news-body-collapsed {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 5;
+    overflow: hidden;
+  }
   @keyframes candidateCardIn {
     from { opacity: 0; transform: translateX(14px); }
     to { opacity: 1; transform: translateX(0); }
@@ -606,7 +612,20 @@
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-8">
-      
+      <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" aria-labelledby="programPdfHeading">
+        <div class="flex flex-wrap items-center justify-between gap-3 p-5 sm:p-6">
+          <div>
+            <h2 id="programPdfHeading" class="text-lg sm:text-xl font-black text-slate-900">البرنامج الانتخابي الكامل</h2>
+            <p class="text-sm text-slate-500 mt-1">تصفّح الوثيقة كاملة أو حمّلها بصيغة PDF.</p>
+          </div>
+          <a href="https://res.cloudinary.com/dq38km9rc/image/upload/fl_attachment/v1794676904/rnd26_bkkkho.pdf" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm transition" aria-label="تحميل البرنامج الانتخابي بصيغة PDF">
+            <i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i>
+            <span>تحميل البرنامج PDF</span>
+          </a>
+        </div>
+        <iframe src="https://res.cloudinary.com/dq38km9rc/image/upload/v1794676904/rnd26_bkkkho.pdf" title="معاينة البرنامج الانتخابي بصيغة PDF" class="w-full h-[70vh] min-h-[520px] border-t border-slate-200" loading="lazy"></iframe>
+      </section>
+
       <!-- Search & Category Filters -->
       <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
         <div class="relative w-full md:w-96">
@@ -1248,6 +1267,7 @@ function showView(route) {
     const pane = $('view-' + r);
     if (pane) pane.classList.toggle('active', r === route);
   });
+  if (route === 'news') updateNewsReadMore();
 
   // Update navigation styling
   $$('[data-route]').forEach(link => {
@@ -1721,11 +1741,34 @@ function renderNews() {
       <div class="p-6">
         <div class="flex items-center gap-2 text-xs font-bold text-brand-700 mb-3"><i class="fa-solid fa-calendar-day"></i><time>${escapeHTML(item.date)}</time></div>
         <h2 class="text-lg font-black text-slate-900 mb-2">${escapeHTML(item.title)}</h2>
-        <p class="text-sm leading-relaxed text-slate-600 whitespace-pre-line">${escapeHTML(item.body)}</p>
+        <p class="news-body-collapsed text-sm leading-relaxed text-slate-600 whitespace-pre-line">${escapeHTML(item.body)}</p>
+        <button type="button" class="news-read-more mt-2 text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline" aria-expanded="false" hidden>إقرأ المزيد</button>
       </div>
     </article>`).join('');
+  host.querySelectorAll('.news-read-more').forEach(button => {
+    const body = button.previousElementSibling;
+    button.addEventListener('click', () => {
+      const expanded = button.getAttribute('aria-expanded') === 'true';
+      body.classList.toggle('news-body-collapsed', expanded);
+      button.setAttribute('aria-expanded', String(!expanded));
+      button.textContent = expanded ? 'إقرأ المزيد' : 'إقرأ أقل';
+    });
+  });
+  if (currentRoute === 'news') updateNewsReadMore();
   empty.classList.toggle('hidden', newsData.length > 0);
 }
+
+function updateNewsReadMore() {
+  const host = $('newsList');
+  if (!host || !host.offsetWidth) return;
+  host.querySelectorAll('.news-read-more').forEach(button => {
+    const body = button.previousElementSibling;
+    const expanded = button.getAttribute('aria-expanded') === 'true';
+    button.hidden = !expanded && body.scrollHeight <= body.clientHeight + 1;
+  });
+}
+
+window.addEventListener('resize', updateNewsReadMore);
 
 let lastAppliedRemoteContent = null;
 let lastRemoteRefreshAt = 0;
